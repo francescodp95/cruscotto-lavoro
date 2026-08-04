@@ -625,6 +625,7 @@ async function refreshFromSheet(){
     showSyncError(null);
     await mergeClickUpImport();
     await mergeChatGptImport_20260804();
+    await updateChatGptImport_20260804();
     await markRaspberryTaskDone();
     await mergeQuickTasks();
     await setAccountantTaskDeadline();
@@ -641,6 +642,8 @@ async function mergeChatGptImport_20260804(){
     {marker:'ChatGPT:20260804-H1', area:'farm', title:'Intervento IT farmacia', hours:1.0, date:'2026-08-03'},
     {marker:'ChatGPT:20260804-H2', area:'farm', title:'Backup Raspberry e clonazione SD', hours:3.0, date:'2026-08-04'},
     {marker:'ChatGPT:20260804-H3', area:'nat', title:'Aggiornamento prodotti nuovi Zampedri Naturalis', hours:2.0, date:'2026-08-04'},
+    {marker:'ChatGPT:20260804-H4', area:'farm', title:'Backup Raspberry e clonazione SD (14:30-15:00)', hours:0.5, date:'2026-08-04'},
+    {marker:'ChatGPT:20260804-H5', area:'farm', title:'Automazioni / Gestione operation', hours:1.0, date:'2026-08-04'},
   ];
   for(const item of hoursItems){
     const already = rows.some(r => r['Tipo']==='Ora' && (r['Note']||'').includes(item.marker));
@@ -667,6 +670,24 @@ async function mergeChatGptImport_20260804(){
       priority:item.priority, due:'', estHours:null, date: todayStr(), progress:0, hours:null, note:item.marker
     };
     rows.push(toRow(obj));
+    await persist(obj, false);
+  }
+}
+
+// Aggiornamento recap 2026-08-04: chiude la sessione pomeridiana del raspberry e rinomina la task operation
+async function updateChatGptImport_20260804(){
+  const r2 = rows.find(r => r['Tipo']==='Task' && (r['Note']||'').includes('ChatGPT:20260804-T2'));
+  if(r2 && r2['Stato'] !== 'Fatta'){
+    const obj = fromRow(r2);
+    obj.done = true;
+    Object.assign(r2, toRow(obj));
+    await persist(obj, false);
+  }
+  const r4 = rows.find(r => r['Tipo']==='Task' && (r['Note']||'').includes('ChatGPT:20260804-T4'));
+  if(r4 && r4['Titolo/Descrizione'] !== 'Automazioni / Gestione operation'){
+    const obj = fromRow(r4);
+    obj.title = 'Automazioni / Gestione operation';
+    Object.assign(r4, toRow(obj));
     await persist(obj, false);
   }
 }
