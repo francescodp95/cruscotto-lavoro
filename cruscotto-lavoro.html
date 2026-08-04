@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cruscotto — Paitone & Zampedri</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #EEEBE2;
+    --bg-soft: #F5F3EC;
+    --card: #FFFFFF;
+    --line: #DAD5C6;
+    --ink: #262620;
+    --ink-soft: #6B6A5F;
+    --farm: #1F5B57;
+    --farm-soft: #E3EDEB;
+    --farm-dim: #A9C4C1;
+    --nat: #5C6E3B;
+    --nat-soft: #EBEEDF;
+    --nat-dim: #C0C9A9;
+    --gold: #B98B34;
+    --danger: #9C4A3C;
+    --radius: 14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 24px 80px;}
+
+  header{margin-bottom:22px;}
+  .titlerow{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:18px;}
+  h1{
+    font-family:'Fraunces', serif;
+    font-optical-sizing:auto;
+    font-weight:600;
+    font-size:34px;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .subtitle{color:var(--ink-soft);font-size:14px;margin-top:4px;}
+  .header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .today-badge{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink-soft);background:var(--card);border:1px solid var(--line);padding:6px 12px;border-radius:20px;}
+  .conn-badge{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;
+    padding:6px 12px;border-radius:20px;border:1px solid var(--line);
+    display:flex;align-items:center;gap:6px;cursor:pointer;background:var(--card);
+  }
+  .conn-dot{width:8px;height:8px;border-radius:50%;background:var(--ink-soft);flex-shrink:0;}
+  .conn-badge.ok .conn-dot{background:var(--nat);}
+  .conn-badge.err .conn-dot{background:var(--danger);}
+  .conn-badge.syncing .conn-dot{background:var(--gold);}
+  .icon-btn{
+    width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--card);
+    cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);
+  }
+  .icon-btn:hover{color:var(--ink);}
+
+  .dose-strip{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:16px 20px;
+    display:flex;
+    align-items:center;
+    gap:18px;
+  }
+  .dose-label{font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);white-space:nowrap;}
+  .dose-track{
+    flex:1;
+    display:flex;
+    align-items:flex-end;
+    gap:3px;
+    height:34px;
+    position:relative;
+  }
+  .tick{
+    flex:1;
+    max-width:10px;
+    background:var(--line);
+    border-radius:2px 2px 0 0;
+    height:6px;
+    transition:height .4s ease, background .3s ease;
+  }
+  .tick.filled.farm{background:var(--farm);}
+  .tick.filled.nat{background:var(--nat);}
+  .dose-total{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;white-space:nowrap;}
+  .dose-total span{font-size:11px;color:var(--ink-soft);font-weight:400;display:block;text-transform:uppercase;letter-spacing:.06em;}
+
+  nav.tabs{display:flex;gap:6px;margin:24px 0 20px;border-bottom:1px solid var(--line);}
+  nav.tabs button{
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:14px;font-weight:500;
+    background:none;border:none;
+    padding:10px 16px;
+    color:var(--ink-soft);
+    cursor:pointer;
+    border-bottom:2px solid transparent;
+    margin-bottom:-1px;
+  }
+  nav.tabs button.active{color:var(--ink);border-bottom-color:var(--gold);}
+
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .areas{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media(max-width:820px){.areas{grid-template-columns:1fr;}}
+
+  .area-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    overflow:hidden;
+  }
+  .area-head{
+    padding:16px 20px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .area-head.farm{background:var(--farm-soft);}
+  .area-head.nat{background:var(--nat-soft);}
+  .area-head h2{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:19px;
+    margin:0;
+  }
+  .area-head.farm h2{color:var(--farm);}
+  .area-head.nat h2{color:var(--nat);}
+  .area-count{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);}
+
+  .area-body{padding:14px 18px 18px;}
+
+  .add-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+  .add-row input, .add-row select{
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:13.5px;
+    padding:8px 10px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:var(--bg-soft);
+    color:var(--ink);
+  }
+  .add-row input[type=text]{flex:1;min-width:160px;}
+  .add-row button{
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:13px;font-weight:500;
+    border:none;
+    border-radius:8px;
+    padding:8px 14px;
+    cursor:pointer;
+    color:#fff;
+  }
+  .area-card.farm-card .add-row button{background:var(--farm);}
+  .area-card.nat-card .add-row button{background:var(--nat);}
+
+  ul.task-list{list-style:none;margin:0;padding:0;}
+  ul.task-list li{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:9px 4px;
+    border-bottom:1px solid var(--line);
+    font-size:14px;
+  }
+  ul.task-list li:last-child{border-bottom:none;}
+  ul.task-list li.done .task-title{text-decoration:line-through;color:var(--ink-soft);}
+  ul.task-list li input[type=checkbox]{width:17px;height:17px;accent-color:var(--gold);cursor:pointer;flex-shrink:0;}
+  .task-title{flex:1;}
+  .est-input{
+    width:46px;font-family:'IBM Plex Mono',monospace;font-size:12px;
+    border:1px solid var(--line);border-radius:6px;background:var(--bg-soft);
+    color:var(--ink-soft);padding:3px 4px;text-align:center;flex-shrink:0;
+  }
+  .est-input:focus{color:var(--ink);border-color:var(--gold);}
+  .task-meta{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);white-space:nowrap;}
+  .task-meta.overdue{color:var(--danger);}
+  .del-btn{
+    background:none;border:none;cursor:pointer;color:var(--ink-soft);
+    font-size:16px;line-height:1;padding:2px 4px;flex-shrink:0;
+  }
+  .del-btn:hover{color:var(--danger);}
+  .empty-note{color:var(--ink-soft);font-size:13px;padding:10px 4px;font-style:italic;}
+
+  .obj-item{padding:12px 4px;border-bottom:1px solid var(--line);}
+  .obj-item:last-child{border-bottom:none;}
+  .obj-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px;}
+  .obj-title{font-size:14px;font-weight:500;}
+  .obj-deadline{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);white-space:nowrap;}
+  .obj-bar-bg{background:var(--bg-soft);border-radius:6px;height:8px;overflow:hidden;border:1px solid var(--line);}
+  .obj-bar-fill{height:100%;border-radius:6px;transition:width .3s ease;}
+  .area-card.farm-card .obj-bar-fill{background:var(--farm);}
+  .area-card.nat-card .obj-bar-fill{background:var(--nat);}
+  .obj-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:6px;}
+  .obj-pct{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);}
+  .obj-controls{display:flex;gap:4px;align-items:center;}
+  .obj-controls button{
+    width:22px;height:22px;border-radius:6px;border:1px solid var(--line);background:var(--bg-soft);
+    cursor:pointer;font-size:13px;color:var(--ink);line-height:1;
+  }
+
+  .hours-layout{display:grid;grid-template-columns:340px 1fr;gap:18px;}
+  @media(max-width:900px){.hours-layout{grid-template-columns:1fr;}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;}
+  .card h3{font-family:'Fraunces',serif;font-size:16px;font-weight:600;margin:0 0 14px;}
+  .form-grid{display:flex;flex-direction:column;gap:10px;}
+  .form-grid label{font-size:12px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;margin-bottom:-4px;}
+  .form-grid input, .form-grid select{
+    font-family:'IBM Plex Sans',sans-serif;font-size:14px;padding:9px 10px;
+    border:1px solid var(--line);border-radius:8px;background:var(--bg-soft);color:var(--ink);width:100%;
+  }
+  .form-grid button{
+    margin-top:4px;
+    background:var(--ink);color:#fff;border:none;border-radius:8px;
+    padding:10px;font-size:14px;font-weight:500;cursor:pointer;
+  }
+
+  table.log{width:100%;border-collapse:collapse;font-size:13.5px;}
+  table.log th{
+    text-align:left;font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;
+    color:var(--ink-soft);padding:6px 8px;border-bottom:1px solid var(--line);font-weight:500;
+  }
+  table.log td{padding:8px 8px;border-bottom:1px solid var(--line);}
+  table.log tr:last-child td{border-bottom:none;}
+  .tag{
+    display:inline-block;font-size:11px;font-family:'IBM Plex Mono',monospace;
+    padding:2px 8px;border-radius:10px;font-weight:500;
+  }
+  .tag.farm{background:var(--farm-soft);color:var(--farm);}
+  .tag.nat{background:var(--nat-soft);color:var(--nat);}
+  .hrs-cell{font-family:'IBM Plex Mono',monospace;text-align:right;}
+
+  .week-summary{display:flex;gap:14px;margin-bottom:16px;flex-wrap:wrap;}
+  .stat{background:var(--bg-soft);border:1px solid var(--line);border-radius:10px;padding:10px 16px;flex:1;min-width:130px;}
+  .stat .num{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;}
+  .stat .lbl{font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;margin-top:2px;}
+
+  .oggi-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;}
+  @media(max-width:820px){.oggi-grid{grid-template-columns:1fr;}}
+
+  select.pri{border-color:var(--line);}
+  .pri-hi{color:var(--danger);font-weight:600;}
+  .pri-md{color:var(--gold);font-weight:600;}
+  .pri-lo{color:var(--ink-soft);}
+
+  ::placeholder{color:#B5B0A0;}
+
+  /* Settings modal */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(38,38,32,.45);
+    display:none;align-items:center;justify-content:center;z-index:50;padding:20px;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal{
+    background:var(--card);border-radius:var(--radius);padding:24px 26px;max-width:480px;width:100%;
+    border:1px solid var(--line);
+  }
+  .modal h3{font-family:'Fraunces',serif;font-size:18px;margin:0 0 6px;}
+  .modal p{font-size:13px;color:var(--ink-soft);line-height:1.5;margin:0 0 14px;}
+  .modal input[type=text]{
+    width:100%;font-family:'IBM Plex Mono',monospace;font-size:13px;padding:10px 12px;
+    border:1px solid var(--line);border-radius:8px;background:var(--bg-soft);color:var(--ink);margin-bottom:12px;
+  }
+  .modal-btns{display:flex;gap:8px;justify-content:flex-end;}
+  .modal-btns button{border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:500;cursor:pointer;}
+  .btn-primary{background:var(--ink);color:#fff;}
+  .btn-secondary{background:var(--bg-soft);color:var(--ink);border:1px solid var(--line) !important;}
+  .sync-error{
+    background:#F7EAE7;border:1px solid var(--danger);color:var(--danger);
+    border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:16px;display:none;
+  }
+  .sync-error.show{display:block;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="titlerow">
+      <div>
+        <h1>Cruscotto di lavoro</h1>
+        <div class="subtitle">Farmacia di Paitone · Zampedri Naturalis</div>
+      </div>
+      <div class="header-right">
+        <div class="today-badge" id="todayBadge"></div>
+        <div class="conn-badge" id="connBadge" onclick="openSettings()">
+          <span class="conn-dot"></span><span id="connLabel">Non collegato</span>
+        </div>
+        <button class="icon-btn" onclick="manualRefresh()" title="Aggiorna dal foglio">⟳</button>
+      </div>
+    </div>
+    <div class="sync-error" id="syncError"></div>
+    <div class="dose-strip">
+      <div class="dose-label">Ore<br>oggi</div>
+      <div class="dose-track" id="doseTrack"></div>
+      <div class="dose-total" id="doseTotal">0.0<span>ore registrate</span></div>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button data-tab="oggi" class="active">Oggi</button>
+    <button data-tab="attivita">Attività</button>
+    <button data-tab="obiettivi">Obiettivi</button>
+    <button data-tab="ore">Ore</button>
+  </nav>
+
+  <!-- OGGI -->
+  <section class="view active" id="view-oggi">
+    <div class="oggi-grid">
+      <div class="area-card farm-card">
+        <div class="area-head farm"><h2>Farmacia di Paitone</h2><span class="area-count" id="oggiFarmCount"></span></div>
+        <div class="area-body">
+          <ul class="task-list" id="oggiFarmList"></ul>
+        </div>
+      </div>
+      <div class="area-card nat-card">
+        <div class="area-head nat"><h2>Zampedri Naturalis</h2><span class="area-count" id="oggiNatCount"></span></div>
+        <div class="area-body">
+          <ul class="task-list" id="oggiNatList"></ul>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Obiettivi in corso</h3>
+      <div id="oggiObjectives"></div>
+    </div>
+  </section>
+
+  <!-- ATTIVITA -->
+  <section class="view" id="view-attivita">
+    <div class="areas">
+      <div class="area-card farm-card">
+        <div class="area-head farm"><h2>Farmacia di Paitone</h2><span class="area-count" id="farmTaskCount"></span></div>
+        <div class="area-body">
+          <div class="add-row">
+            <input type="text" id="farmTaskInput" placeholder="Nuova attività...">
+            <select id="farmTaskPriority"><option value="alta">Alta</option><option value="media" selected>Media</option><option value="bassa">Bassa</option></select>
+            <input type="number" id="farmTaskEst" step="0.25" min="0" placeholder="h prev." style="width:70px;">
+            <input type="date" id="farmTaskDate" style="min-width:130px;">
+            <button onclick="addTask('farm')">Aggiungi</button>
+          </div>
+          <ul class="task-list" id="farmTaskList"></ul>
+        </div>
+      </div>
+      <div class="area-card nat-card">
+        <div class="area-head nat"><h2>Zampedri Naturalis</h2><span class="area-count" id="natTaskCount"></span></div>
+        <div class="area-body">
+          <div class="add-row">
+            <input type="text" id="natTaskInput" placeholder="Nuova attività...">
+            <select id="natTaskPriority"><option value="alta">Alta</option><option value="media" selected>Media</option><option value="bassa">Bassa</option></select>
+            <input type="number" id="natTaskEst" step="0.25" min="0" placeholder="h prev." style="width:70px;">
+            <input type="date" id="natTaskDate" style="min-width:130px;">
+            <button onclick="addTask('nat')">Aggiungi</button>
+          </div>
+          <ul class="task-list" id="natTaskList"></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OBIETTIVI -->
+  <section class="view" id="view-obiettivi">
+    <div class="areas">
+      <div class="area-card farm-card">
+        <div class="area-head farm"><h2>Farmacia di Paitone</h2><span class="area-count" id="farmObjCount"></span></div>
+        <div class="area-body">
+          <div class="add-row">
+            <input type="text" id="farmObjInput" placeholder="Nuovo obiettivo...">
+            <input type="date" id="farmObjDate" style="min-width:130px;">
+            <button onclick="addObjective('farm')">Aggiungi</button>
+          </div>
+          <div id="farmObjList"></div>
+        </div>
+      </div>
+      <div class="area-card nat-card">
+        <div class="area-head nat"><h2>Zampedri Naturalis</h2><span class="area-count" id="natObjCount"></span></div>
+        <div class="area-body">
+          <div class="add-row">
+            <input type="text" id="natObjInput" placeholder="Nuovo obiettivo...">
+            <input type="date" id="natObjDate" style="min-width:130px;">
+            <button onclick="addObjective('nat')">Aggiungi</button>
+          </div>
+          <div id="natObjList"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ORE -->
+  <section class="view" id="view-ore">
+    <div class="hours-layout">
+      <div class="card">
+        <h3>Registra ore</h3>
+        <div class="form-grid">
+          <label>Area</label>
+          <select id="hoursArea">
+            <option value="farm">Farmacia di Paitone</option>
+            <option value="nat">Zampedri Naturalis</option>
+          </select>
+          <label>Descrizione</label>
+          <input type="text" id="hoursDesc" placeholder="es. gestione fatture fornitori">
+          <label>Data</label>
+          <input type="date" id="hoursDate">
+          <label>Ore</label>
+          <input type="number" id="hoursValue" step="0.25" min="0.25" placeholder="es. 1.5">
+          <button onclick="addHours()">Registra ore</button>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:14px;padding:12px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:13px;color:var(--ink-soft);">Orario di lavoro: 9:00–12:00 lun–sab, 14:30–17:45 x 3 pomeriggi. Capacità settimanale (ore):</span>
+          <input type="number" id="capacityInput" step="0.25" min="0" style="width:80px;font-family:'IBM Plex Mono',monospace;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg-soft);" onchange="updateCapacity()">
+        </div>
+        <div class="week-summary" id="weekSummary"></div>
+        <div class="card" style="margin-bottom:16px;">
+          <h3>Storico settimanale</h3>
+          <table class="log">
+            <thead><tr><th>Settimana</th><th>Farmacia</th><th>Naturalis</th><th style="text-align:right">Totale</th></tr></thead>
+            <tbody id="weeklyHistoryBody"></tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h3>Registro ore</h3>
+          <table class="log">
+            <thead><tr><th>Data</th><th>Area</th><th>Descrizione</th><th style="text-align:right">Ore</th><th></th></tr></thead>
+            <tbody id="hoursTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <h3>Collegamento a Google Sheets</h3>
+    <p>Incolla qui l'URL della Web App di Apps Script collegata al tuo foglio "Cruscotto Lavoro - Paitone & Zampedri". Una volta salvato, il cruscotto leggerà e scriverà direttamente lì, e resterà sincronizzato anche con Make o altri strumenti collegati allo stesso foglio.</p>
+    <input type="text" id="webAppUrlInput" placeholder="https://script.google.com/macros/s/XXXX/exec">
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeSettings()">Annulla</button>
+      <button class="btn-primary" onclick="saveWebAppUrl()">Salva e connetti</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const HEADERS = ["ID","Tipo","Area","Titolo/Descrizione","Stato","Priorita","OrePreviste","Scadenza","Avanzamento%","Ore","Data","Note"];
+let rows = [];       // raw rows as they exist on the sheet
+let localSettings = { weeklyCapacity: 27.75 };
+let webAppUrl = null;
+
+const DEFAULT_WEEKLY_CAPACITY = 27.75;
+
+function uid(prefix){ return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+
+// ---------- Mapping between sheet rows and internal objects ----------
+function toDateOnly(v){
+  if(v === '' || v == null) return '';
+  const s = String(v);
+  return s.length >= 10 ? s.slice(0,10) : s;
+}
+function parseNum(v){
+  if(v === '' || v == null) return null;
+  if(typeof v === 'string' && v.includes('T') && v.includes(':')){
+    // Google Sheets sometimes auto-converts a plain decimal into a time value.
+    // Recover the original fraction of hours from that timestamp.
+    const d = new Date(v);
+    if(!isNaN(d)) return +(d.getUTCHours() + d.getUTCMinutes()/60 + d.getUTCSeconds()/3600).toFixed(2);
+    return null;
+  }
+  const n = parseFloat(v);
+  return isNaN(n) ? null : n;
+}
+function fromRow(r){
+  return {
+    id: r['ID'], tipo: r['Tipo'], area: r['Area'], title: r['Titolo/Descrizione'],
+    done: r['Stato'] === 'Fatta',
+    priority: r['Priorita'] || 'media',
+    estHours: parseNum(r['OrePreviste']),
+    due: toDateOnly(r['Scadenza']),
+    progress: parseNum(r['Avanzamento%']) ?? 0,
+    hours: parseNum(r['Ore']),
+    date: toDateOnly(r['Data']) || todayStr(),
+    note: r['Note'] || ''
+  };
+}
+function toRow(o){
+  return {
+    'ID': o.id, 'Tipo': o.tipo, 'Area': o.area, 'Titolo/Descrizione': o.title,
+    'Stato': o.tipo==='Task' ? (o.done ? 'Fatta' : 'Aperta') : '',
+    'Priorita': o.priority || '',
+    'OrePreviste': o.estHours != null ? o.estHours : '',
+    'Scadenza': o.due || '',
+    'Avanzamento%': o.progress != null ? o.progress : '',
+    'Ore': o.hours != null ? o.hours : '',
+    'Data': o.date || '',
+    'Note': o.note || ''
+  };
+}
+
+function getTasks(){ return rows.filter(r=>r['Tipo']==='Task').map(fromRow); }
+function getObjectives(){ return rows.filter(r=>r['Tipo']==='Obiettivo').map(fromRow); }
+function getTimeEntries(){ return rows.filter(r=>r['Tipo']==='Ora').map(fromRow); }
+
+// ---------- Connection / storage of the webapp URL (local config only) ----------
+function hasClaudeStorage(){
+  return typeof window.storage !== 'undefined' && window.storage !== null;
+}
+
+async function loadWebAppUrl(){
+  if(hasClaudeStorage()){
+    try{
+      const res = await window.storage.get('sheet-webapp-url');
+      if(res && res.value) webAppUrl = res.value;
+    }catch(e){ /* not set yet */ }
+  } else {
+    try{
+      const v = localStorage.getItem('sheet-webapp-url');
+      if(v) webAppUrl = v;
+    }catch(e){ /* storage unavailable */ }
+  }
+}
+async function saveWebAppUrlToStorage(url){
+  webAppUrl = url;
+  if(hasClaudeStorage()){
+    try{ await window.storage.set('sheet-webapp-url', url); }catch(e){}
+  } else {
+    try{ localStorage.setItem('sheet-webapp-url', url); }catch(e){}
+  }
+}
+async function loadLocalSettings(){
+  if(hasClaudeStorage()){
+    try{
+      const res = await window.storage.get('cruscotto-settings');
+      if(res && res.value) localSettings = JSON.parse(res.value);
+    }catch(e){}
+  } else {
+    try{
+      const v = localStorage.getItem('cruscotto-settings');
+      if(v) localSettings = JSON.parse(v);
+    }catch(e){}
+  }
+  if(typeof localSettings.weeklyCapacity !== 'number') localSettings.weeklyCapacity = DEFAULT_WEEKLY_CAPACITY;
+}
+async function saveLocalSettings(){
+  if(hasClaudeStorage()){
+    try{ await window.storage.set('cruscotto-settings', JSON.stringify(localSettings)); }catch(e){}
+  } else {
+    try{ localStorage.setItem('cruscotto-settings', JSON.stringify(localSettings)); }catch(e){}
+  }
+}
+
+function openSettings(){
+  document.getElementById('webAppUrlInput').value = webAppUrl || '';
+  document.getElementById('settingsModal').classList.add('open');
+}
+function closeSettings(){
+  document.getElementById('settingsModal').classList.remove('open');
+}
+async function saveWebAppUrl(){
+  const url = document.getElementById('webAppUrlInput').value.trim();
+  if(!url) return;
+  await saveWebAppUrlToStorage(url);
+  closeSettings();
+  await refreshFromSheet();
+}
+
+function setConnBadge(state, label){
+  const badge = document.getElementById('connBadge');
+  badge.classList.remove('ok','err','syncing');
+  if(state) badge.classList.add(state);
+  document.getElementById('connLabel').textContent = label;
+}
+function showSyncError(msg){
+  const el = document.getElementById('syncError');
+  if(msg){ el.textContent = msg; el.classList.add('show'); }
+  else { el.classList.remove('show'); el.textContent=''; }
+}
+
+// ---------- API calls to the Apps Script Web App ----------
+async function apiList(){
+  if(!webAppUrl) return [];
+  const res = await fetch(webAppUrl + '?action=list', { method:'GET' });
+  if(!res.ok) throw new Error('Errore di lettura dal foglio (' + res.status + ')');
+  return await res.json();
+}
+async function apiUpsert(obj){
+  if(!webAppUrl) return;
+  const res = await fetch(webAppUrl, {
+    method:'POST',
+    headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action:'upsert', data: toRow(obj) })
+  });
+  if(!res.ok) throw new Error('Errore di scrittura sul foglio (' + res.status + ')');
+}
+async function apiDelete(id){
+  if(!webAppUrl) return;
+  const res = await fetch(webAppUrl, {
+    method:'POST',
+    headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action:'delete', id })
+  });
+  if(!res.ok) throw new Error('Errore di eliminazione sul foglio (' + res.status + ')');
+}
+
+async function refreshFromSheet(){
+  if(!webAppUrl){
+    setConnBadge(null, 'Non collegato');
+    renderAll();
+    return;
+  }
+  setConnBadge('syncing', 'Sincronizzo...');
+  try{
+    rows = await apiList();
+    setConnBadge('ok', 'Collegato');
+    showSyncError(null);
+    await mergeClickUpImport();
+  }catch(e){
+    setConnBadge('err', 'Errore connessione');
+    showSyncError('Non riesco a leggere il foglio: ' + e.message + '. Controlla il collegamento nelle impostazioni.');
+  }
+  renderAll();
+}
+
+// One-time import of tasks pulled from the shared "ZAMPEDRI NATURALIS" ClickUp list.
+// Each entry is tagged with its ClickUp task id in the Note field so re-opening this
+// file never creates duplicates; it only adds tasks that aren't there yet.
+const CLICKUP_IMPORT = [
+  {ck_id:'869e7fw5j', title:'Aggiungere immagini guida', priority:'media', done:false},
+  {ck_id:'869e79g4m', title:'Indicazioni legali claims x AI', priority:'media', done:false},
+  {ck_id:'869e582gb', title:'Check orari attività su FB del dottore', priority:'alta', done:false},
+  {ck_id:'869e4xcvf', title:'Lista broadcast clienti farmacia', priority:'media', done:false},
+  {ck_id:'869e4tb46', title:'Crea flyer per prodotti da mettere nelle confezioni', priority:'alta', done:false},
+  {ck_id:'869e4tb1g', title:'Cambio numero di telefono per Google', priority:'alta', done:true},
+  {ck_id:'869e4qxfc', title:'Creare pagina di download guida fegato senza copy', priority:'media', done:false},
+  {ck_id:'869e4qx8p', title:'Creare strategia social lancio Live', priority:'media', done:false},
+  {ck_id:'869e4qx3e', title:'Trasferire tutto il blog su zampedrinaturalis', priority:'media', done:true},
+  {ck_id:'869e4eyy8', title:'Recensioni', priority:'bassa', done:false},
+  {ck_id:'8696y4r6r', title:'Data live', priority:'media', done:false},
+  {ck_id:'8696y4r6p', title:'Confermare mail per marketing', priority:'media', done:false},
+];
+
+async function mergeClickUpImport(){
+  for(const item of CLICKUP_IMPORT){
+    const marker = 'ClickUp:' + item.ck_id;
+    const already = rows.some(r => (r['Note']||'').includes(marker));
+    if(already) continue;
+    const obj = {
+      id: uid('T'), tipo:'Task', area:'nat', title: item.title, done: item.done,
+      priority: item.priority, due:'', estHours:null, date: todayStr(),
+      progress:0, hours:null, note: marker
+    };
+    rows.push(toRow(obj));
+    await persist(obj, false);
+  }
+}
+async function manualRefresh(){
+  await refreshFromSheet();
+}
+
+async function persist(obj, isDelete){
+  try{
+    if(isDelete) await apiDelete(obj.id);
+    else await apiUpsert(obj);
+    showSyncError(null);
+  }catch(e){
+    showSyncError('Modifica salvata solo in locale: ' + e.message);
+  }
+}
+
+// ---------- Tabs ----------
+document.querySelectorAll('nav.tabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('view-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ---------- Tasks ----------
+function addTask(area){
+  const inputEl = document.getElementById(area+'TaskInput');
+  const title = inputEl.value.trim();
+  if(!title) return;
+  const priority = document.getElementById(area+'TaskPriority').value;
+  const due = document.getElementById(area+'TaskDate').value;
+  const estEl = document.getElementById(area+'TaskEst');
+  const est = estEl.value ? parseFloat(estEl.value) : null;
+  const obj = { id: uid('T'), tipo:'Task', area, title, done:false, priority, due, estHours: est, date: todayStr(), progress:0, hours:null, note:'' };
+  rows.push(toRow(obj));
+  inputEl.value=''; document.getElementById(area+'TaskDate').value=''; estEl.value='';
+  renderAll(); persist(obj, false);
+}
+function updateEstHours(id, val){
+  const r = rows.find(x=>x['ID']===id);
+  if(r){ r['OrePreviste'] = val===''? '' : parseFloat(val); persist(fromRow(r), false); }
+}
+function toggleTask(id){
+  const r = rows.find(x=>x['ID']===id);
+  if(r){
+    const obj = fromRow(r);
+    obj.done = !obj.done;
+    Object.assign(r, toRow(obj));
+    renderAll(); persist(obj, false);
+  }
+}
+function deleteTask(id){
+  rows = rows.filter(x=>x['ID']!==id);
+  renderAll(); persist({id}, true);
+}
+
+function priLabel(p){
+  if(p==='alta') return '<span class="pri-hi">alta</span>';
+  if(p==='bassa') return '<span class="pri-lo">bassa</span>';
+  return '<span class="pri-md">media</span>';
+}
+
+function renderTaskList(container, area, {onlyPending=false, limit=null}={}){
+  let list = getTasks().filter(t=>t.area===area);
+  if(onlyPending) list = list.filter(t=>!t.done);
+  list.sort((a,b)=>{
+    if(a.done!==b.done) return a.done?1:-1;
+    const pr = {alta:0, media:1, bassa:2};
+    if(pr[a.priority]!==pr[b.priority]) return pr[a.priority]-pr[b.priority];
+    return (a.due||'9999').localeCompare(b.due||'9999');
+  });
+  if(limit) list = list.slice(0, limit);
+  container.innerHTML='';
+  if(list.length===0){
+    container.innerHTML = '<li class="empty-note">Nessuna attività.</li>';
+    return;
+  }
+  const todayS = todayStr();
+  list.forEach(t=>{
+    const li = document.createElement('li');
+    if(t.done) li.classList.add('done');
+    const overdue = t.due && t.due < todayS && !t.done;
+    li.innerHTML = `
+      <input type="checkbox" ${t.done?'checked':''} onchange="toggleTask('${t.id}')">
+      <span class="task-title">${escapeHtml(t.title)}</span>
+      <input type="number" class="est-input" step="0.25" min="0" value="${t.estHours!=null?t.estHours:''}" placeholder="h" title="Ore previste" onchange="updateEstHours('${t.id}', this.value)">
+      <span class="task-meta ${overdue?'overdue':''}">${priLabel(t.priority)}${t.due? ' · '+formatDate(t.due):''}</span>
+      <button class="del-btn" onclick="deleteTask('${t.id}')" title="Elimina">×</button>
+    `;
+    container.appendChild(li);
+  });
+}
+
+function formatDate(iso){
+  const d = new Date(iso+'T00:00:00');
+  return d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'});
+}
+function escapeHtml(s){
+  const div = document.createElement('div'); div.textContent = s; return div.innerHTML;
+}
+
+// ---------- Objectives ----------
+function addObjective(area){
+  const inputEl = document.getElementById(area+'ObjInput');
+  const title = inputEl.value.trim();
+  if(!title) return;
+  const due = document.getElementById(area+'ObjDate').value;
+  const obj = { id: uid('O'), tipo:'Obiettivo', area, title, progress:0, due, estHours:null, hours:null, date:'', priority:'', done:false, note:'' };
+  rows.push(toRow(obj));
+  inputEl.value=''; document.getElementById(area+'ObjDate').value='';
+  renderAll(); persist(obj, false);
+}
+function adjustProgress(id, delta){
+  const r = rows.find(x=>x['ID']===id);
+  if(r){
+    const obj = fromRow(r);
+    obj.progress = Math.max(0, Math.min(100, obj.progress+delta));
+    Object.assign(r, toRow(obj));
+    renderAll(); persist(obj, false);
+  }
+}
+function deleteObjective(id){
+  rows = rows.filter(x=>x['ID']!==id);
+  renderAll(); persist({id}, true);
+}
+
+function renderObjectives(container, area){
+  const list = getObjectives().filter(o=>o.area===area).sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999'));
+  container.innerHTML='';
+  if(list.length===0){
+    container.innerHTML = '<div class="empty-note">Nessun obiettivo impostato.</div>';
+    return;
+  }
+  list.forEach(o=>{
+    const div = document.createElement('div');
+    div.className='obj-item';
+    div.innerHTML = `
+      <div class="obj-top">
+        <span class="obj-title">${escapeHtml(o.title)}</span>
+        <span class="obj-deadline">${o.due? formatDate(o.due) : ''}</span>
+      </div>
+      <div class="obj-bar-bg"><div class="obj-bar-fill" style="width:${o.progress}%"></div></div>
+      <div class="obj-bottom">
+        <span class="obj-pct">${o.progress}%</span>
+        <div class="obj-controls">
+          <button onclick="adjustProgress('${o.id}',-10)">−</button>
+          <button onclick="adjustProgress('${o.id}',10)">+</button>
+          <button onclick="deleteObjective('${o.id}')">×</button>
+        </div>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// ---------- Hours ----------
+function addHours(){
+  const area = document.getElementById('hoursArea').value;
+  const desc = document.getElementById('hoursDesc').value.trim();
+  const date = document.getElementById('hoursDate').value || todayStr();
+  const value = parseFloat(document.getElementById('hoursValue').value);
+  if(!desc || !value || value<=0) return;
+  const obj = { id: uid('H'), tipo:'Ora', area, title:desc, hours:value, date, estHours:null, due:'', progress:0, priority:'', done:false, note:'' };
+  rows.push(toRow(obj));
+  document.getElementById('hoursDesc').value=''; document.getElementById('hoursValue').value='';
+  renderAll(); persist(obj, false);
+}
+function deleteEntry(id){
+  rows = rows.filter(x=>x['ID']!==id);
+  renderAll(); persist({id}, true);
+}
+
+function renderHoursTable(){
+  const tbody = document.getElementById('hoursTableBody');
+  const list = [...getTimeEntries()].sort((a,b)=> b.date.localeCompare(a.date));
+  tbody.innerHTML='';
+  if(list.length===0){
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-note">Nessuna ora registrata.</td></tr>';
+    return;
+  }
+  list.forEach(e=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${formatDate(e.date)}</td>
+      <td><span class="tag ${e.area}">${e.area==='farm'?'Farmacia':'Naturalis'}</span></td>
+      <td>${escapeHtml(e.title)}</td>
+      <td class="hrs-cell">${(e.hours||0).toFixed(2)}</td>
+      <td><button class="del-btn" onclick="deleteEntry('${e.id}')">×</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function startOfWeek(d){
+  const date = new Date(d+'T00:00:00');
+  const day = (date.getDay()+6)%7;
+  date.setDate(date.getDate()-day);
+  return date.toISOString().slice(0,10);
+}
+
+function renderWeeklyHistory(){
+  const wkStart = startOfWeek(todayStr());
+  const groups = {};
+  getTimeEntries().forEach(e=>{
+    const ws = startOfWeek(e.date);
+    if(!groups[ws]) groups[ws] = {farm:0, nat:0};
+    groups[ws][e.area] += (e.hours||0);
+  });
+  const weeks = Object.keys(groups).sort((a,b)=>b.localeCompare(a));
+  const tbody = document.getElementById('weeklyHistoryBody');
+  tbody.innerHTML='';
+  if(weeks.length===0){
+    tbody.innerHTML = '<tr><td colspan="4" class="empty-note">Nessuna ora registrata.</td></tr>';
+    return;
+  }
+  weeks.forEach(ws=>{
+    const g = groups[ws];
+    const total = g.farm + g.nat;
+    const isCurrent = ws === wkStart;
+    const endDate = new Date(ws+'T00:00:00');
+    endDate.setDate(endDate.getDate()+6);
+    const label = formatDate(ws) + ' – ' + formatDate(endDate.toISOString().slice(0,10)) + (isCurrent ? ' (in corso)' : '');
+    const tr = document.createElement('tr');
+    if(isCurrent) tr.style.background = 'var(--bg-soft)';
+    tr.innerHTML = `
+      <td style="${isCurrent?'font-weight:600':''}">${label}</td>
+      <td style="color:var(--farm)">${g.farm.toFixed(1)}</td>
+      <td style="color:var(--nat)">${g.nat.toFixed(1)}</td>
+      <td class="hrs-cell" style="${isCurrent?'font-weight:600':''}">${total.toFixed(1)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderWeekSummary(){
+  const wkStart = startOfWeek(todayStr());
+  const weekEntries = getTimeEntries().filter(e=>e.date >= wkStart);
+  const farmH = weekEntries.filter(e=>e.area==='farm').reduce((s,e)=>s+(e.hours||0),0);
+  const natH = weekEntries.filter(e=>e.area==='nat').reduce((s,e)=>s+(e.hours||0),0);
+  const totalH = farmH+natH;
+  const cap = localSettings.weeklyCapacity ?? DEFAULT_WEEKLY_CAPACITY;
+  const remaining = cap - totalH;
+  const el = document.getElementById('weekSummary');
+  el.innerHTML = `
+    <div class="stat"><div class="num">${totalH.toFixed(1)}</div><div class="lbl">Ore questa settimana</div></div>
+    <div class="stat"><div class="num" style="color:var(--farm)">${farmH.toFixed(1)}</div><div class="lbl">Farmacia di Paitone</div></div>
+    <div class="stat"><div class="num" style="color:var(--nat)">${natH.toFixed(1)}</div><div class="lbl">Zampedri Naturalis</div></div>
+    <div class="stat"><div class="num" style="color:${remaining<0?'var(--danger)':'var(--gold)'}">${remaining.toFixed(1)}</div><div class="lbl">Ore residue su ${cap.toFixed(1)}h</div></div>
+  `;
+  document.getElementById('capacityInput').value = cap;
+}
+
+function updateCapacity(){
+  const v = parseFloat(document.getElementById('capacityInput').value);
+  if(!isNaN(v) && v>=0){
+    localSettings.weeklyCapacity = v;
+    saveLocalSettings(); renderWeekSummary();
+  }
+}
+
+function renderDoseStrip(){
+  const today = todayStr();
+  const todays = getTimeEntries().filter(e=>e.date===today);
+  const farmH = todays.filter(e=>e.area==='farm').reduce((s,e)=>s+(e.hours||0),0);
+  const natH = todays.filter(e=>e.area==='nat').reduce((s,e)=>s+(e.hours||0),0);
+  const total = farmH+natH;
+  const track = document.getElementById('doseTrack');
+  track.innerHTML='';
+  const SLOTS = 20;
+  const farmSlots = Math.round(farmH*2);
+  const natSlots = Math.round(natH*2);
+  for(let i=0;i<SLOTS;i++){
+    const tick = document.createElement('div');
+    tick.className='tick';
+    if(i < farmSlots){ tick.classList.add('filled','farm'); tick.style.height='34px'; }
+    else if(i < farmSlots+natSlots){ tick.classList.add('filled','nat'); tick.style.height='34px'; }
+    else { tick.style.height = (6 + (i%3)*2)+'px'; }
+    track.appendChild(tick);
+  }
+  document.getElementById('doseTotal').innerHTML = total.toFixed(1) + '<span>ore registrate</span>';
+}
+
+function renderAll(){
+  renderTaskList(document.getElementById('farmTaskList'), 'farm');
+  renderTaskList(document.getElementById('natTaskList'), 'nat');
+  document.getElementById('farmTaskCount').textContent = getTasks().filter(t=>t.area==='farm'&&!t.done).length + ' aperte';
+  document.getElementById('natTaskCount').textContent = getTasks().filter(t=>t.area==='nat'&&!t.done).length + ' aperte';
+
+  renderTaskList(document.getElementById('oggiFarmList'), 'farm', {onlyPending:true, limit:6});
+  renderTaskList(document.getElementById('oggiNatList'), 'nat', {onlyPending:true, limit:6});
+  document.getElementById('oggiFarmCount').textContent = getTasks().filter(t=>t.area==='farm'&&!t.done).length + ' da fare';
+  document.getElementById('oggiNatCount').textContent = getTasks().filter(t=>t.area==='nat'&&!t.done).length + ' da fare';
+
+  renderObjectives(document.getElementById('farmObjList'), 'farm');
+  renderObjectives(document.getElementById('natObjList'), 'nat');
+  document.getElementById('farmObjCount').textContent = getObjectives().filter(o=>o.area==='farm').length + ' totali';
+  document.getElementById('natObjCount').textContent = getObjectives().filter(o=>o.area==='nat').length + ' totali';
+
+  const oggiObj = document.getElementById('oggiObjectives');
+  const allObj = getObjectives().filter(o=>o.progress<100).sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999')).slice(0,4);
+  oggiObj.innerHTML='';
+  if(allObj.length===0){
+    oggiObj.innerHTML = '<div class="empty-note">Nessun obiettivo attivo al momento.</div>';
+  } else {
+    allObj.forEach(o=>{
+      const div = document.createElement('div');
+      div.className='obj-item';
+      div.innerHTML = `
+        <div class="obj-top">
+          <span class="obj-title">${escapeHtml(o.title)} <span class="tag ${o.area}" style="margin-left:6px;">${o.area==='farm'?'Farmacia':'Naturalis'}</span></span>
+          <span class="obj-deadline">${o.due? formatDate(o.due) : ''}</span>
+        </div>
+        <div class="obj-bar-bg"><div class="obj-bar-fill" style="width:${o.progress}%; background:${o.area==='farm'?'var(--farm)':'var(--nat)'}"></div></div>
+      `;
+      oggiObj.appendChild(div);
+    });
+  }
+
+  renderHoursTable();
+  renderWeekSummary();
+  renderWeeklyHistory();
+  renderDoseStrip();
+}
+
+['farmTaskInput','natTaskInput'].forEach(id=>{
+  document.getElementById(id).addEventListener('keydown', e=>{
+    if(e.key==='Enter') addTask(id.startsWith('farm')?'farm':'nat');
+  });
+});
+['farmObjInput','natObjInput'].forEach(id=>{
+  document.getElementById(id).addEventListener('keydown', e=>{
+    if(e.key==='Enter') addObjective(id.startsWith('farm')?'farm':'nat');
+  });
+});
+
+async function init(){
+  document.getElementById('hoursDate').value = todayStr();
+  document.getElementById('todayBadge').textContent = new Date().toLocaleDateString('it-IT',{weekday:'long', day:'numeric', month:'long'});
+  await loadLocalSettings();
+  await loadWebAppUrl();
+  await refreshFromSheet();
+  // Ricontrolla periodicamente eventuali modifiche fatte da altri strumenti (es. Make)
+  setInterval(refreshFromSheet, 30000);
+}
+init();
+</script>
+</body>
+</html>
