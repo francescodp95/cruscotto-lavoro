@@ -624,11 +624,90 @@ async function refreshFromSheet(){
     setConnBadge('ok', 'Collegato');
     showSyncError(null);
     await mergeClickUpImport();
+    await mergeChatGptImport_20260804();
+    await markRaspberryTaskDone();
+    await mergeQuickTasks();
+    await setAccountantTaskDeadline();
   }catch(e){
     setConnBadge('err', 'Errore connessione');
     showSyncError('Non riesco a leggere il foglio: ' + e.message + '. Controlla il collegamento nelle impostazioni.');
   }
   renderAll();
+}
+
+// Recap ricevuto da ChatGPT per il 03-04/08/2026
+async function mergeChatGptImport_20260804(){
+  const hoursItems = [
+    {marker:'ChatGPT:20260804-H1', area:'farm', title:'Intervento IT farmacia', hours:1.0, date:'2026-08-03'},
+    {marker:'ChatGPT:20260804-H2', area:'farm', title:'Backup Raspberry e clonazione SD', hours:3.0, date:'2026-08-04'},
+    {marker:'ChatGPT:20260804-H3', area:'nat', title:'Aggiornamento prodotti nuovi Zampedri Naturalis', hours:2.0, date:'2026-08-04'},
+  ];
+  for(const item of hoursItems){
+    const already = rows.some(r => r['Tipo']==='Ora' && (r['Note']||'').includes(item.marker));
+    if(already) continue;
+    const obj = {
+      id: uid('H'), tipo:'Ora', area:item.area, title:item.title, hours:item.hours, date:item.date,
+      estHours:null, due:'', progress:0, priority:'', done:false, note:item.marker
+    };
+    rows.push(toRow(obj));
+    await persist(obj, false);
+  }
+
+  const taskItems = [
+    {marker:'ChatGPT:20260804-T1', area:'farm', title:'Intervento IT farmacia', priority:'media', done:true},
+    {marker:'ChatGPT:20260804-T2', area:'farm', title:'Backup Raspberry e clonazione SD (ripresa dalle 14:30)', priority:'media', done:false},
+    {marker:'ChatGPT:20260804-T3', area:'nat', title:'Aggiornamento prodotti nuovi Zampedri Naturalis', priority:'media', done:true},
+    {marker:'ChatGPT:20260804-T4', area:'farm', title:'Gestione operation', priority:'media', done:false},
+  ];
+  for(const item of taskItems){
+    const already = rows.some(r => r['Tipo']==='Task' && (r['Note']||'').includes(item.marker));
+    if(already) continue;
+    const obj = {
+      id: uid('T'), tipo:'Task', area:item.area, title:item.title, done:item.done,
+      priority:item.priority, due:'', estHours:null, date: todayStr(), progress:0, hours:null, note:item.marker
+    };
+    rows.push(toRow(obj));
+    await persist(obj, false);
+  }
+}
+
+// Segna come completata la task originale del raspberry, chiusa oggi alle 15:00
+async function markRaspberryTaskDone(){
+  const r = rows.find(x => x['Tipo']==='Task' && (x['Titolo/Descrizione']||'').includes('Riprogrammare il raspberry') && x['Stato'] !== 'Fatta');
+  if(!r) return;
+  const obj = fromRow(r);
+  obj.done = true;
+  obj.note = (obj.note ? obj.note + ' · ' : '') + 'Completata il ' + todayStr() + ' alle 15:00';
+  Object.assign(r, toRow(obj));
+  await persist(obj, false);
+}
+
+// Task aggiunte manualmente su richiesta, una tantum
+const QUICK_TASKS = [
+  {marker:'Manual:20260804-T1', area:'nat', title:'Preparare estratti conto banca, PayPal e Stripe di Zampedri Naturalis per il commercialista', priority:'alta'},
+];
+async function mergeQuickTasks(){
+  for(const item of QUICK_TASKS){
+    const already = rows.some(r => r['Tipo']==='Task' && (r['Note']||'').includes(item.marker));
+    if(already) continue;
+    const obj = {
+      id: uid('T'), tipo:'Task', area:item.area, title:item.title, done:false,
+      priority:item.priority, due:'', estHours:null, date: todayStr(), progress:0, hours:null, note:item.marker
+    };
+    rows.push(toRow(obj));
+    await persist(obj, false);
+  }
+}
+
+async function setAccountantTaskDeadline(){
+  const r = rows.find(x => x['Tipo']==='Task' && (x['Titolo/Descrizione']||'').includes('estratti conto banca, PayPal e Stripe'));
+  if(!r) return;
+  if(r['Scadenza'] === '2026-08-05') return; // già impostata
+  const obj = fromRow(r);
+  obj.due = '2026-08-05';
+  obj.priority = 'alta';
+  Object.assign(r, toRow(obj));
+  await persist(obj, false);
 }
 
 // One-time import of tasks pulled from the shared "ZAMPEDRI NATURALIS" ClickUp list.
