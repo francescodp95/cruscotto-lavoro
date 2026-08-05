@@ -809,9 +809,26 @@ function toggleTask(id){
   const r = rows.find(x=>x['ID']===id);
   if(r){
     const obj = fromRow(r);
-    obj.done = !obj.done;
+    const becomingDone = !obj.done;
+    obj.done = becomingDone;
     Object.assign(r, toRow(obj));
     renderAll(); persist(obj, false);
+
+    if(becomingDone){
+      const suggested = obj.estHours != null ? obj.estHours : '';
+      const answer = window.prompt('Quante ore hai impiegato per "' + obj.title + '"?', suggested);
+      if(answer !== null){
+        const hrs = parseFloat(answer.replace(',', '.'));
+        if(!isNaN(hrs) && hrs > 0){
+          const hoursObj = {
+            id: uid('H'), tipo:'Ora', area: obj.area, title: obj.title, hours: hrs, date: todayStr(),
+            estHours:null, due:'', progress:0, priority:'', done:false, note:'Da completamento task ' + obj.id
+          };
+          rows.push(toRow(hoursObj));
+          renderAll(); persist(hoursObj, false);
+        }
+      }
+    }
   }
 }
 function deleteTask(id){
