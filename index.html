@@ -88,8 +88,6 @@
     height:6px;
     transition:height .4s ease, background .3s ease;
   }
-  .tick.filled.farm{background:var(--farm);}
-  .tick.filled.nat{background:var(--nat);}
   .dose-total{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;white-space:nowrap;}
   .dose-total span{font-size:11px;color:var(--ink-soft);font-weight:400;display:block;text-transform:uppercase;letter-spacing:.06em;}
 
@@ -109,8 +107,7 @@
   .view{display:none;}
   .view.active{display:block;}
 
-  .areas{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
-  @media(max-width:820px){.areas{grid-template-columns:1fr;}}
+  .areas{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px;}
 
   .area-card{
     background:var(--card);
@@ -123,18 +120,27 @@
     display:flex;
     justify-content:space-between;
     align-items:center;
+    gap:8px;
   }
-  .area-head.farm{background:var(--farm-soft);}
-  .area-head.nat{background:var(--nat-soft);}
   .area-head h2{
     font-family:'Fraunces',serif;
     font-weight:600;
     font-size:19px;
     margin:0;
   }
-  .area-head.farm h2{color:var(--farm);}
-  .area-head.nat h2{color:var(--nat);}
-  .area-count{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);}
+  .area-count{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);white-space:nowrap;}
+  .area-head-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+  .area-del-btn{
+    background:none;border:none;cursor:pointer;color:inherit;opacity:.5;
+    font-size:15px;line-height:1;padding:2px 4px;flex-shrink:0;
+  }
+  .area-del-btn:hover{opacity:1;}
+  .add-area-btn{
+    font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;
+    border:1px dashed var(--line);border-radius:8px;background:none;color:var(--ink-soft);
+    padding:7px 14px;cursor:pointer;
+  }
+  .add-area-btn:hover{color:var(--ink);border-color:var(--ink-soft);}
 
   .area-body{padding:14px 18px 18px;}
 
@@ -158,8 +164,6 @@
     cursor:pointer;
     color:#fff;
   }
-  .area-card.farm-card .add-row button{background:var(--farm);}
-  .area-card.nat-card .add-row button{background:var(--nat);}
 
   ul.task-list{list-style:none;margin:0;padding:0;}
   ul.task-list li{
@@ -196,8 +200,6 @@
   .obj-deadline{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);white-space:nowrap;}
   .obj-bar-bg{background:var(--bg-soft);border-radius:6px;height:8px;overflow:hidden;border:1px solid var(--line);}
   .obj-bar-fill{height:100%;border-radius:6px;transition:width .3s ease;}
-  .area-card.farm-card .obj-bar-fill{background:var(--farm);}
-  .area-card.nat-card .obj-bar-fill{background:var(--nat);}
   .obj-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:6px;}
   .obj-pct{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);}
   .obj-controls{display:flex;gap:4px;align-items:center;}
@@ -233,17 +235,22 @@
     display:inline-block;font-size:11px;font-family:'IBM Plex Mono',monospace;
     padding:2px 8px;border-radius:10px;font-weight:500;
   }
-  .tag.farm{background:var(--farm-soft);color:var(--farm);}
-  .tag.nat{background:var(--nat-soft);color:var(--nat);}
   .hrs-cell{font-family:'IBM Plex Mono',monospace;text-align:right;}
+
+  .week-row{padding:10px 4px;border-bottom:1px solid var(--line);}
+  .week-row:last-child{border-bottom:none;}
+  .week-row-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  .week-row-label{font-size:13.5px;}
+  .week-row-total{font-family:'IBM Plex Mono',monospace;font-size:13.5px;}
+  .week-row-chips{display:flex;gap:8px;flex-wrap:wrap;}
+  .week-chip{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:2px 8px;border-radius:10px;}
 
   .week-summary{display:flex;gap:14px;margin-bottom:16px;flex-wrap:wrap;}
   .stat{background:var(--bg-soft);border:1px solid var(--line);border-radius:10px;padding:10px 16px;flex:1;min-width:130px;}
   .stat .num{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;}
   .stat .lbl{font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;margin-top:2px;}
 
-  .oggi-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;}
-  @media(max-width:820px){.oggi-grid{grid-template-columns:1fr;}}
+  .oggi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px;margin-bottom:18px;}
 
   select.pri{border-color:var(--line);}
   .pri-hi{color:var(--danger);font-weight:600;}
@@ -294,6 +301,7 @@
           <span class="conn-dot"></span><span id="connLabel">Non collegato</span>
         </div>
         <button class="icon-btn" onclick="manualRefresh()" title="Aggiorna dal foglio">⟳</button>
+        <button class="icon-btn" onclick="addArea()" title="Aggiungi una nuova area di lavoro">+</button>
       </div>
     </div>
     <div class="sync-error" id="syncError"></div>
@@ -313,20 +321,7 @@
 
   <!-- OGGI -->
   <section class="view active" id="view-oggi">
-    <div class="oggi-grid">
-      <div class="area-card farm-card">
-        <div class="area-head farm"><h2>Farmacia di Paitone</h2><span class="area-count" id="oggiFarmCount"></span></div>
-        <div class="area-body">
-          <ul class="task-list" id="oggiFarmList"></ul>
-        </div>
-      </div>
-      <div class="area-card nat-card">
-        <div class="area-head nat"><h2>Zampedri Naturalis</h2><span class="area-count" id="oggiNatCount"></span></div>
-        <div class="area-body">
-          <ul class="task-list" id="oggiNatList"></ul>
-        </div>
-      </div>
-    </div>
+    <div class="oggi-grid" id="oggiAreas"></div>
     <div class="card">
       <h3>Obiettivi in corso</h3>
       <div id="oggiObjectives"></div>
@@ -335,62 +330,12 @@
 
   <!-- ATTIVITA -->
   <section class="view" id="view-attivita">
-    <div class="areas">
-      <div class="area-card farm-card">
-        <div class="area-head farm"><h2>Farmacia di Paitone</h2><span class="area-count" id="farmTaskCount"></span></div>
-        <div class="area-body">
-          <div class="add-row">
-            <input type="text" id="farmTaskInput" placeholder="Nuova attività...">
-            <select id="farmTaskPriority"><option value="alta">Alta</option><option value="media" selected>Media</option><option value="bassa">Bassa</option></select>
-            <input type="number" id="farmTaskEst" step="0.25" min="0" placeholder="h prev." style="width:70px;">
-            <input type="date" id="farmTaskDate" style="min-width:130px;">
-            <button onclick="addTask('farm')">Aggiungi</button>
-          </div>
-          <ul class="task-list" id="farmTaskList"></ul>
-        </div>
-      </div>
-      <div class="area-card nat-card">
-        <div class="area-head nat"><h2>Zampedri Naturalis</h2><span class="area-count" id="natTaskCount"></span></div>
-        <div class="area-body">
-          <div class="add-row">
-            <input type="text" id="natTaskInput" placeholder="Nuova attività...">
-            <select id="natTaskPriority"><option value="alta">Alta</option><option value="media" selected>Media</option><option value="bassa">Bassa</option></select>
-            <input type="number" id="natTaskEst" step="0.25" min="0" placeholder="h prev." style="width:70px;">
-            <input type="date" id="natTaskDate" style="min-width:130px;">
-            <button onclick="addTask('nat')">Aggiungi</button>
-          </div>
-          <ul class="task-list" id="natTaskList"></ul>
-        </div>
-      </div>
-    </div>
+    <div class="areas" id="attivitaAreas"></div>
   </section>
 
   <!-- OBIETTIVI -->
   <section class="view" id="view-obiettivi">
-    <div class="areas">
-      <div class="area-card farm-card">
-        <div class="area-head farm"><h2>Farmacia di Paitone</h2><span class="area-count" id="farmObjCount"></span></div>
-        <div class="area-body">
-          <div class="add-row">
-            <input type="text" id="farmObjInput" placeholder="Nuovo obiettivo...">
-            <input type="date" id="farmObjDate" style="min-width:130px;">
-            <button onclick="addObjective('farm')">Aggiungi</button>
-          </div>
-          <div id="farmObjList"></div>
-        </div>
-      </div>
-      <div class="area-card nat-card">
-        <div class="area-head nat"><h2>Zampedri Naturalis</h2><span class="area-count" id="natObjCount"></span></div>
-        <div class="area-body">
-          <div class="add-row">
-            <input type="text" id="natObjInput" placeholder="Nuovo obiettivo...">
-            <input type="date" id="natObjDate" style="min-width:130px;">
-            <button onclick="addObjective('nat')">Aggiungi</button>
-          </div>
-          <div id="natObjList"></div>
-        </div>
-      </div>
-    </div>
+    <div class="areas" id="obiettiviAreas"></div>
   </section>
 
   <!-- ORE -->
@@ -400,10 +345,7 @@
         <h3>Registra ore</h3>
         <div class="form-grid">
           <label>Area</label>
-          <select id="hoursArea">
-            <option value="farm">Farmacia di Paitone</option>
-            <option value="nat">Zampedri Naturalis</option>
-          </select>
+          <select id="hoursArea"></select>
           <label>Descrizione</label>
           <input type="text" id="hoursDesc" placeholder="es. gestione fatture fornitori">
           <label>Data</label>
@@ -421,10 +363,7 @@
         <div class="week-summary" id="weekSummary"></div>
         <div class="card" style="margin-bottom:16px;">
           <h3>Storico settimanale</h3>
-          <table class="log">
-            <thead><tr><th>Settimana</th><th>Farmacia</th><th>Naturalis</th><th style="text-align:right">Totale</th></tr></thead>
-            <tbody id="weeklyHistoryBody"></tbody>
-          </table>
+          <div id="weeklyHistoryList"></div>
         </div>
         <div class="card">
           <h3>Registro ore</h3>
@@ -510,6 +449,63 @@ function toRow(o){
 function getTasks(){ return rows.filter(r=>r['Tipo']==='Task').map(fromRow); }
 function getObjectives(){ return rows.filter(r=>r['Tipo']==='Obiettivo').map(fromRow); }
 function getTimeEntries(){ return rows.filter(r=>r['Tipo']==='Ora').map(fromRow); }
+
+// ---------- Aree di lavoro dinamiche ----------
+const DEFAULT_AREAS = [
+  {id:'farm', name:'Farmacia di Paitone', color:'#1F5B57', soft:'#E3EDEB'},
+  {id:'nat', name:'Zampedri Naturalis', color:'#5C6E3B', soft:'#EBEEDF'},
+];
+const CUSTOM_PALETTE = [
+  {color:'#8A5A3B', soft:'#F1E7DD'},
+  {color:'#4A5A8A', soft:'#E4E7F1'},
+  {color:'#8A3B5A', soft:'#F1DDE7'},
+  {color:'#3B7A8A', soft:'#DDEEF1'},
+  {color:'#7A6A2E', soft:'#F0ECD9'},
+  {color:'#5A3B8A', soft:'#E7DDF1'},
+];
+
+function computeAreas(){
+  const custom = rows.filter(r=>r['Tipo']==='AreaDef').map(r=>{
+    const parts = (r['Note']||'').split('|');
+    return { id:r['Area'], name:r['Titolo/Descrizione'], color:parts[0]||'#8A5A3B', soft:parts[1]||'#F1E7DD', custom:true };
+  });
+  const customIds = new Set(custom.map(a=>a.id));
+  const defaults = DEFAULT_AREAS.filter(a=>!customIds.has(a.id)).map(a=>({...a, custom:false}));
+  return [...defaults, ...custom];
+}
+function getAreaById(id){
+  return computeAreas().find(a=>a.id===id) || {id, name:id, color:'#6B6A5F', soft:'#F5F3EC', custom:true};
+}
+function slugify(name){
+  let s = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+  if(!s) s = 'area';
+  return s + '-' + Math.random().toString(36).slice(2,6);
+}
+async function addArea(){
+  const name = window.prompt('Nome della nuova area di lavoro (es. "Nuovo progetto"):');
+  if(!name || !name.trim()) return;
+  const trimmed = name.trim();
+  const slug = slugify(trimmed);
+  const customCount = rows.filter(r=>r['Tipo']==='AreaDef').length;
+  const pal = CUSTOM_PALETTE[customCount % CUSTOM_PALETTE.length];
+  const obj = {
+    id: uid('A'), tipo:'AreaDef', area: slug, title: trimmed, note: pal.color+'|'+pal.soft,
+    done:false, priority:'', estHours:null, due:'', progress:0, hours:null, date:''
+  };
+  rows.push(toRow(obj));
+  renderAll();
+  await persist(obj, false);
+}
+async function deleteArea(id){
+  const area = getAreaById(id);
+  if(!window.confirm('Rimuovere l\'area "' + area.name + '"? Le task/ore già registrate in quest\'area restano nel foglio, semplicemente non avranno più una scheda dedicata qui.')) return;
+  const r = rows.find(x=>x['Tipo']==='AreaDef' && x['Area']===id);
+  if(!r) return;
+  const areaDefId = r['ID'];
+  rows = rows.filter(x=>x['ID']!==areaDefId);
+  renderAll();
+  await persist({id: areaDefId}, true);
+}
 
 // ---------- Connection / storage of the webapp URL (local config only) ----------
 function hasClaudeStorage(){
@@ -961,10 +957,11 @@ function renderHoursTable(){
     return;
   }
   list.forEach(e=>{
+    const a = getAreaById(e.area);
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${formatDate(e.date)}</td>
-      <td><span class="tag ${e.area}">${e.area==='farm'?'Farmacia':'Naturalis'}</span></td>
+      <td><span class="tag" style="background:${a.soft};color:${a.color}">${escapeHtml(a.name)}</span></td>
       <td>${escapeHtml(e.title)}</td>
       <td class="hrs-cell">${(e.hours||0).toFixed(2)}</td>
       <td><button class="del-btn" onclick="deleteEntry('${e.id}')">×</button></td>
@@ -980,53 +977,61 @@ function startOfWeek(d){
   return date.toISOString().slice(0,10);
 }
 
-function renderWeeklyHistory(){
+function renderWeeklyHistoryList(){
+  const areasList = computeAreas();
   const wkStart = startOfWeek(todayStr());
   const groups = {};
   getTimeEntries().forEach(e=>{
     const ws = startOfWeek(e.date);
-    if(!groups[ws]) groups[ws] = {farm:0, nat:0};
-    groups[ws][e.area] += (e.hours||0);
+    if(!groups[ws]) groups[ws] = {};
+    groups[ws][e.area] = (groups[ws][e.area] || 0) + (e.hours||0);
   });
   const weeks = Object.keys(groups).sort((a,b)=>b.localeCompare(a));
-  const tbody = document.getElementById('weeklyHistoryBody');
-  tbody.innerHTML='';
+  const container = document.getElementById('weeklyHistoryList');
+  container.innerHTML='';
   if(weeks.length===0){
-    tbody.innerHTML = '<tr><td colspan="4" class="empty-note">Nessuna ora registrata.</td></tr>';
+    container.innerHTML = '<div class="empty-note">Nessuna ora registrata.</div>';
     return;
   }
   weeks.forEach(ws=>{
     const g = groups[ws];
-    const total = g.farm + g.nat;
+    const total = Object.values(g).reduce((s,v)=>s+v,0);
     const isCurrent = ws === wkStart;
     const endDate = new Date(ws+'T00:00:00');
     endDate.setDate(endDate.getDate()+6);
     const label = formatDate(ws) + ' – ' + formatDate(endDate.toISOString().slice(0,10)) + (isCurrent ? ' (in corso)' : '');
-    const tr = document.createElement('tr');
-    if(isCurrent) tr.style.background = 'var(--bg-soft)';
-    tr.innerHTML = `
-      <td style="${isCurrent?'font-weight:600':''}">${label}</td>
-      <td style="color:var(--farm)">${g.farm.toFixed(1)}</td>
-      <td style="color:var(--nat)">${g.nat.toFixed(1)}</td>
-      <td class="hrs-cell" style="${isCurrent?'font-weight:600':''}">${total.toFixed(1)}</td>
+    const chips = areasList.filter(a=>g[a.id]).map(a=>
+      `<span class="week-chip" style="background:${a.soft};color:${a.color}">${escapeHtml(a.name)}: ${g[a.id].toFixed(1)}h</span>`
+    ).join('');
+    const div = document.createElement('div');
+    div.className = 'week-row';
+    if(isCurrent) div.style.background = 'var(--bg-soft)';
+    div.innerHTML = `
+      <div class="week-row-top">
+        <span class="week-row-label" style="${isCurrent?'font-weight:600':''}">${label}</span>
+        <span class="week-row-total" style="${isCurrent?'font-weight:600':''}">${total.toFixed(1)}h</span>
+      </div>
+      <div class="week-row-chips">${chips}</div>
     `;
-    tbody.appendChild(tr);
+    container.appendChild(div);
   });
 }
 
 function renderWeekSummary(){
+  const areasList = computeAreas();
   const wkStart = startOfWeek(todayStr());
   const weekEntries = getTimeEntries().filter(e=>e.date >= wkStart);
-  const farmH = weekEntries.filter(e=>e.area==='farm').reduce((s,e)=>s+(e.hours||0),0);
-  const natH = weekEntries.filter(e=>e.area==='nat').reduce((s,e)=>s+(e.hours||0),0);
-  const totalH = farmH+natH;
+  const totalH = weekEntries.reduce((s,e)=>s+(e.hours||0),0);
   const cap = localSettings.weeklyCapacity ?? DEFAULT_WEEKLY_CAPACITY;
   const remaining = cap - totalH;
+  const areaStats = areasList.map(a=>{
+    const h = weekEntries.filter(e=>e.area===a.id).reduce((s,e)=>s+(e.hours||0),0);
+    return `<div class="stat"><div class="num" style="color:${a.color}">${h.toFixed(1)}</div><div class="lbl">${escapeHtml(a.name)}</div></div>`;
+  }).join('');
   const el = document.getElementById('weekSummary');
   el.innerHTML = `
     <div class="stat"><div class="num">${totalH.toFixed(1)}</div><div class="lbl">Ore questa settimana</div></div>
-    <div class="stat"><div class="num" style="color:var(--farm)">${farmH.toFixed(1)}</div><div class="lbl">Farmacia di Paitone</div></div>
-    <div class="stat"><div class="num" style="color:var(--nat)">${natH.toFixed(1)}</div><div class="lbl">Zampedri Naturalis</div></div>
+    ${areaStats}
     <div class="stat"><div class="num" style="color:${remaining<0?'var(--danger)':'var(--gold)'}">${remaining.toFixed(1)}</div><div class="lbl">Ore residue su ${cap.toFixed(1)}h</div></div>
   `;
   document.getElementById('capacityInput').value = cap;
@@ -1041,43 +1046,125 @@ function updateCapacity(){
 }
 
 function renderDoseStrip(){
+  const areasList = computeAreas();
   const today = todayStr();
   const todays = getTimeEntries().filter(e=>e.date===today);
-  const farmH = todays.filter(e=>e.area==='farm').reduce((s,e)=>s+(e.hours||0),0);
-  const natH = todays.filter(e=>e.area==='nat').reduce((s,e)=>s+(e.hours||0),0);
-  const total = farmH+natH;
+  const perArea = areasList.map(a=>({
+    area:a, hours: todays.filter(e=>e.area===a.id).reduce((s,e)=>s+(e.hours||0),0)
+  }));
+  const total = perArea.reduce((s,x)=>s+x.hours,0);
   const track = document.getElementById('doseTrack');
   track.innerHTML='';
-  const SLOTS = 20;
-  const farmSlots = Math.round(farmH*2);
-  const natSlots = Math.round(natH*2);
+  const SLOTS = 20; // rappresentano 10 ore, a scatti di 0.5h
+  const slotsByArea = perArea.map(x=>({color:x.area.color, slots:Math.round(x.hours*2)}));
+  let cursor = 0;
+  const slotColors = [];
+  slotsByArea.forEach(x=>{ for(let i=0;i<x.slots && cursor<SLOTS;i++,cursor++) slotColors[cursor] = x.color; });
   for(let i=0;i<SLOTS;i++){
     const tick = document.createElement('div');
     tick.className='tick';
-    if(i < farmSlots){ tick.classList.add('filled','farm'); tick.style.height='34px'; }
-    else if(i < farmSlots+natSlots){ tick.classList.add('filled','nat'); tick.style.height='34px'; }
+    if(slotColors[i]){ tick.classList.add('filled'); tick.style.background = slotColors[i]; tick.style.height='34px'; }
     else { tick.style.height = (6 + (i%3)*2)+'px'; }
     track.appendChild(tick);
   }
   document.getElementById('doseTotal').innerHTML = total.toFixed(1) + '<span>ore registrate</span>';
 }
 
+function buildHoursAreaOptions(){
+  const sel = document.getElementById('hoursArea');
+  const current = sel.value;
+  sel.innerHTML = computeAreas().map(a=>`<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
+  if(current && [...sel.options].some(o=>o.value===current)) sel.value = current;
+}
+
+function areaCardHtml(a, {withAdd, addKind}){
+  const delBtn = a.custom ? `<button class="area-del-btn" onclick="deleteArea('${a.id}')" title="Rimuovi area">×</button>` : '';
+  let addRow = '';
+  if(withAdd === 'task'){
+    addRow = `
+      <div class="add-row">
+        <input type="text" id="${a.id}TaskInput" placeholder="Nuova attività...">
+        <select id="${a.id}TaskPriority"><option value="alta">Alta</option><option value="media" selected>Media</option><option value="bassa">Bassa</option></select>
+        <input type="number" id="${a.id}TaskEst" step="0.25" min="0" placeholder="h prev." style="width:70px;">
+        <input type="date" id="${a.id}TaskDate" style="min-width:130px;">
+        <button style="background:${a.color}" onclick="addTask('${a.id}')">Aggiungi</button>
+      </div>`;
+  } else if(withAdd === 'obj'){
+    addRow = `
+      <div class="add-row">
+        <input type="text" id="${a.id}ObjInput" placeholder="Nuovo obiettivo...">
+        <input type="date" id="${a.id}ObjDate" style="min-width:130px;">
+        <button style="background:${a.color}" onclick="addObjective('${a.id}')">Aggiungi</button>
+      </div>`;
+  }
+  return `
+    <div class="area-card" data-area="${a.id}">
+      <div class="area-head" style="background:${a.soft}">
+        <h2 style="color:${a.color}">${escapeHtml(a.name)}</h2>
+        <div class="area-head-right">
+          <span class="area-count" id="${a.id}${addKind==='task'?'Task':'Obj'}Count"></span>
+          ${delBtn}
+        </div>
+      </div>
+      <div class="area-body">
+        ${addRow}
+        ${addKind==='task' ? `<ul class="task-list" id="${a.id}TaskList"></ul>` : `<div id="${a.id}ObjList"></div>`}
+      </div>
+    </div>`;
+}
+
+function renderAttivitaAreas(){
+  const areasList = computeAreas();
+  const container = document.getElementById('attivitaAreas');
+  container.innerHTML = areasList.map(a=>areaCardHtml(a, {withAdd:'task', addKind:'task'})).join('');
+  areasList.forEach(a=>{
+    renderTaskList(document.getElementById(a.id+'TaskList'), a.id);
+    document.getElementById(a.id+'TaskCount').textContent = getTasks().filter(t=>t.area===a.id&&!t.done).length + ' aperte';
+    attachEnterKey(a.id+'TaskInput', ()=>addTask(a.id));
+  });
+}
+
+function renderObiettiviAreas(){
+  const areasList = computeAreas();
+  const container = document.getElementById('obiettiviAreas');
+  container.innerHTML = areasList.map(a=>areaCardHtml(a, {withAdd:'obj', addKind:'obj'})).join('');
+  areasList.forEach(a=>{
+    renderObjectives(document.getElementById(a.id+'ObjList'), a.id);
+    document.getElementById(a.id+'ObjCount').textContent = getObjectives().filter(o=>o.area===a.id).length + ' totali';
+    attachEnterKey(a.id+'ObjInput', ()=>addObjective(a.id));
+  });
+}
+
+function renderOggiAreas(){
+  const areasList = computeAreas();
+  const container = document.getElementById('oggiAreas');
+  container.innerHTML = areasList.map(a=>`
+    <div class="area-card" data-area="${a.id}">
+      <div class="area-head" style="background:${a.soft}">
+        <h2 style="color:${a.color}">${escapeHtml(a.name)}</h2>
+        <span class="area-count" id="oggi${a.id}Count"></span>
+      </div>
+      <div class="area-body"><ul class="task-list" id="oggi${a.id}List"></ul></div>
+    </div>`).join('');
+  areasList.forEach(a=>{
+    renderTaskList(document.getElementById('oggi'+a.id+'List'), a.id, {onlyPending:true, limit:6});
+    document.getElementById('oggi'+a.id+'Count').textContent = getTasks().filter(t=>t.area===a.id&&!t.done).length + ' da fare';
+  });
+}
+
+function attachEnterKey(id, fn){
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('keydown', e=>{ if(e.key==='Enter') fn(); });
+}
+
 function renderAll(){
-  renderTaskList(document.getElementById('farmTaskList'), 'farm');
-  renderTaskList(document.getElementById('natTaskList'), 'nat');
-  document.getElementById('farmTaskCount').textContent = getTasks().filter(t=>t.area==='farm'&&!t.done).length + ' aperte';
-  document.getElementById('natTaskCount').textContent = getTasks().filter(t=>t.area==='nat'&&!t.done).length + ' aperte';
+  document.querySelector('.subtitle').textContent = computeAreas().map(a=>a.name).join(' · ');
+  buildHoursAreaOptions();
+  renderAttivitaAreas();
+  renderOggiAreas();
+  renderObiettiviAreas();
 
-  renderTaskList(document.getElementById('oggiFarmList'), 'farm', {onlyPending:true, limit:6});
-  renderTaskList(document.getElementById('oggiNatList'), 'nat', {onlyPending:true, limit:6});
-  document.getElementById('oggiFarmCount').textContent = getTasks().filter(t=>t.area==='farm'&&!t.done).length + ' da fare';
-  document.getElementById('oggiNatCount').textContent = getTasks().filter(t=>t.area==='nat'&&!t.done).length + ' da fare';
-
-  renderObjectives(document.getElementById('farmObjList'), 'farm');
-  renderObjectives(document.getElementById('natObjList'), 'nat');
-  document.getElementById('farmObjCount').textContent = getObjectives().filter(o=>o.area==='farm').length + ' totali';
-  document.getElementById('natObjCount').textContent = getObjectives().filter(o=>o.area==='nat').length + ' totali';
-
+  const areasList = computeAreas();
   const oggiObj = document.getElementById('oggiObjectives');
   const allObj = getObjectives().filter(o=>o.progress<100).sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999')).slice(0,4);
   oggiObj.innerHTML='';
@@ -1085,14 +1172,15 @@ function renderAll(){
     oggiObj.innerHTML = '<div class="empty-note">Nessun obiettivo attivo al momento.</div>';
   } else {
     allObj.forEach(o=>{
+      const a = getAreaById(o.area);
       const div = document.createElement('div');
       div.className='obj-item';
       div.innerHTML = `
         <div class="obj-top">
-          <span class="obj-title">${escapeHtml(o.title)} <span class="tag ${o.area}" style="margin-left:6px;">${o.area==='farm'?'Farmacia':'Naturalis'}</span></span>
+          <span class="obj-title">${escapeHtml(o.title)} <span class="tag" style="margin-left:6px;background:${a.soft};color:${a.color}">${escapeHtml(a.name)}</span></span>
           <span class="obj-deadline">${o.due? formatDate(o.due) : ''}</span>
         </div>
-        <div class="obj-bar-bg"><div class="obj-bar-fill" style="width:${o.progress}%; background:${o.area==='farm'?'var(--farm)':'var(--nat)'}"></div></div>
+        <div class="obj-bar-bg"><div class="obj-bar-fill" style="width:${o.progress}%; background:${a.color}"></div></div>
       `;
       oggiObj.appendChild(div);
     });
@@ -1100,20 +1188,9 @@ function renderAll(){
 
   renderHoursTable();
   renderWeekSummary();
-  renderWeeklyHistory();
+  renderWeeklyHistoryList();
   renderDoseStrip();
 }
-
-['farmTaskInput','natTaskInput'].forEach(id=>{
-  document.getElementById(id).addEventListener('keydown', e=>{
-    if(e.key==='Enter') addTask(id.startsWith('farm')?'farm':'nat');
-  });
-});
-['farmObjInput','natObjInput'].forEach(id=>{
-  document.getElementById(id).addEventListener('keydown', e=>{
-    if(e.key==='Enter') addObjective(id.startsWith('farm')?'farm':'nat');
-  });
-});
 
 async function init(){
   document.getElementById('hoursDate').value = todayStr();
