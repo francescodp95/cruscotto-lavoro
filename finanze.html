@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finanze personali</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #EEEBE2;
+    --bg-soft: #F5F3EC;
+    --card: #FFFFFF;
+    --line: #DAD5C6;
+    --ink: #262620;
+    --ink-soft: #6B6A5F;
+    --in: #2E6E4E;
+    --in-soft: #E1EEE6;
+    --out: #A6503D;
+    --out-soft: #F3E3DF;
+    --gold: #B98B34;
+    --danger: #9C4A3C;
+    --radius: 14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 24px 80px;}
+
+  header{margin-bottom:22px;}
+  .titlerow{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:18px;}
+  h1{
+    font-family:'Fraunces', serif;
+    font-optical-sizing:auto;
+    font-weight:600;
+    font-size:34px;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .subtitle{color:var(--ink-soft);font-size:14px;margin-top:4px;}
+  .header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .today-badge{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink-soft);background:var(--card);border:1px solid var(--line);padding:6px 12px;border-radius:20px;}
+  .conn-badge{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;
+    padding:6px 12px;border-radius:20px;border:1px solid var(--line);
+    display:flex;align-items:center;gap:6px;cursor:pointer;background:var(--card);
+  }
+  .conn-dot{width:8px;height:8px;border-radius:50%;background:var(--ink-soft);flex-shrink:0;}
+  .conn-badge.ok .conn-dot{background:var(--in);}
+  .conn-badge.err .conn-dot{background:var(--danger);}
+  .conn-badge.syncing .conn-dot{background:var(--gold);}
+  .icon-btn{
+    width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--card);
+    cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);
+  }
+  .icon-btn:hover{color:var(--ink);}
+
+  nav.tabs{display:flex;gap:6px;margin:24px 0 20px;border-bottom:1px solid var(--line);}
+  nav.tabs button{
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:14px;font-weight:500;
+    background:none;border:none;
+    padding:10px 16px;
+    color:var(--ink-soft);
+    cursor:pointer;
+    border-bottom:2px solid transparent;
+    margin-bottom:-1px;
+  }
+  nav.tabs button.active{color:var(--ink);border-bottom-color:var(--gold);}
+
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;margin-bottom:18px;}
+  .card h3{font-family:'Fraunces',serif;font-size:16px;font-weight:600;margin:0 0 14px;}
+
+  .period-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin-bottom:18px;}
+  .period-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;}
+  .period-card h3{font-family:'Fraunces',serif;font-size:15px;font-weight:600;margin:0 0 12px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;}
+  .period-rows{display:flex;flex-direction:column;gap:8px;}
+  .period-row{display:flex;justify-content:space-between;align-items:baseline;}
+  .period-row .lbl{font-size:13px;color:var(--ink-soft);}
+  .period-row .val{font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:600;}
+  .period-row.saldo{border-top:1px solid var(--line);padding-top:8px;margin-top:2px;}
+  .period-row.saldo .val{font-size:22px;}
+
+  .macro-block{margin-bottom:16px;}
+  .macro-block:last-child{margin-bottom:0;}
+  .macro-top{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+  .macro-name{font-size:14px;font-weight:600;flex:1;}
+  .macro-bar-bg{flex:2;background:var(--bg-soft);border-radius:6px;height:9px;overflow:hidden;border:1px solid var(--line);}
+  .macro-bar-fill{height:100%;border-radius:6px;background:var(--out);}
+  .macro-val{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;width:75px;text-align:right;}
+  .sub-list{margin:6px 0 0 4px;display:flex;flex-direction:column;gap:5px;}
+  .sub-row{display:flex;align-items:center;gap:10px;padding-left:12px;border-left:2px solid var(--line);}
+  .sub-name{flex:1;font-size:12.5px;color:var(--ink-soft);}
+  .sub-val{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);}
+
+  .add-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .add-row input, .add-row select{
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:13.5px;
+    padding:8px 10px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:var(--bg-soft);
+    color:var(--ink);
+  }
+  .add-row input[type=text]{flex:1;min-width:160px;}
+  .add-row button{
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:13px;font-weight:500;
+    border:none;
+    border-radius:8px;
+    padding:8px 14px;
+    cursor:pointer;
+    color:#fff;
+    background:var(--ink);
+  }
+
+  table.log{width:100%;border-collapse:collapse;font-size:13.5px;}
+  table.log th{
+    text-align:left;font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;
+    color:var(--ink-soft);padding:6px 8px;border-bottom:1px solid var(--line);font-weight:500;
+  }
+  table.log td{padding:8px 8px;border-bottom:1px solid var(--line);}
+  table.log tr:last-child td{border-bottom:none;}
+  .tag{
+    display:inline-block;font-size:11px;font-family:'IBM Plex Mono',monospace;
+    padding:2px 8px;border-radius:10px;font-weight:500;
+  }
+  .tag.macro{background:var(--bg-soft);color:var(--ink-soft);border:1px solid var(--line);}
+  .amt-cell{font-family:'IBM Plex Mono',monospace;text-align:right;font-weight:500;}
+  .amt-cell.in{color:var(--in);}
+  .amt-cell.out{color:var(--out);}
+  .del-btn{
+    background:none;border:none;cursor:pointer;color:var(--ink-soft);
+    font-size:16px;line-height:1;padding:2px 4px;flex-shrink:0;
+  }
+  .del-btn:hover{color:var(--danger);}
+  .empty-note{color:var(--ink-soft);font-size:13px;padding:10px 4px;font-style:italic;}
+
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(38,38,32,.45);
+    display:none;align-items:center;justify-content:center;z-index:50;padding:20px;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal{
+    background:var(--card);border-radius:var(--radius);padding:24px 26px;max-width:480px;width:100%;
+    border:1px solid var(--line);
+  }
+  .modal h3{font-family:'Fraunces',serif;font-size:18px;margin:0 0 6px;}
+  .modal p{font-size:13px;color:var(--ink-soft);line-height:1.5;margin:0 0 14px;}
+  .modal input[type=text]{
+    width:100%;font-family:'IBM Plex Mono',monospace;font-size:13px;padding:10px 12px;
+    border:1px solid var(--line);border-radius:8px;background:var(--bg-soft);color:var(--ink);margin-bottom:12px;
+  }
+  .modal-btns{display:flex;gap:8px;justify-content:flex-end;}
+  .modal-btns button{border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:500;cursor:pointer;}
+  .btn-primary{background:var(--ink);color:#fff;}
+  .btn-secondary{background:var(--bg-soft);color:var(--ink);border:1px solid var(--line) !important;}
+  .sync-error{
+    background:#F7EAE7;border:1px solid var(--danger);color:var(--danger);
+    border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:16px;display:none;
+  }
+  .sync-error.show{display:block;}
+  ::placeholder{color:#B5B0A0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="titlerow">
+      <div>
+        <h1>Finanze personali</h1>
+        <div class="subtitle">Entrate e spese</div>
+      </div>
+      <div class="header-right">
+        <div class="today-badge" id="todayBadge"></div>
+        <div class="conn-badge" id="connBadge" onclick="openSettings()">
+          <span class="conn-dot"></span><span id="connLabel">Non collegato</span>
+        </div>
+        <select id="exportPeriod" style="font-family:'IBM Plex Mono',monospace;font-size:12px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);">
+          <option value="settimana">Questa settimana</option>
+          <option value="mese" selected>Questo mese</option>
+          <option value="anno">Quest'anno</option>
+          <option value="tutto">Tutto</option>
+        </select>
+        <button class="icon-btn" onclick="exportFinanceCsv()" title="Scarica resoconto CSV">⬇</button>
+        <button class="icon-btn" onclick="manualRefresh()" title="Aggiorna dal foglio">⟳</button>
+      </div>
+    </div>
+    <div class="sync-error" id="syncError"></div>
+  </header>
+
+  <nav class="tabs">
+    <button data-tab="panoramica" class="active">Panoramica</button>
+    <button data-tab="movimenti">Movimenti</button>
+    <button data-tab="ricorrenze">Ricorrenze</button>
+    <button data-tab="tasse">Tasse</button>
+  </nav>
+
+  <!-- PANORAMICA -->
+  <section class="view active" id="view-panoramica">
+    <div class="period-grid" id="periodGrid"></div>
+    <div class="card">
+      <h3>Spese per macro-area e categoria — questo mese</h3>
+      <div id="catBreakdown"></div>
+    </div>
+  </section>
+
+  <!-- MOVIMENTI -->
+  <section class="view" id="view-movimenti">
+    <div class="card">
+      <div class="add-row">
+        <select id="movKind" onchange="onKindChange('mov')">
+          <option value="Spesa">Spesa</option>
+          <option value="Entrata">Entrata</option>
+        </select>
+        <select id="movMacro" onchange="onMacroChange('mov')"></select>
+        <input type="text" id="movCategoria" placeholder="Categoria" list="movCatOptions">
+        <datalist id="movCatOptions"></datalist>
+        <input type="text" id="movDesc" placeholder="Descrizione">
+        <input type="number" id="movImporto" step="0.01" min="0.01" placeholder="Importo €" style="width:110px;">
+        <input type="date" id="movData" style="min-width:130px;">
+        <button onclick="addMovimento()">Aggiungi</button>
+      </div>
+      <label id="movFatturaWrap" style="display:none;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-soft);margin:-6px 0 14px;">
+        <input type="checkbox" id="movIsFattura" style="width:15px;height:15px;">
+        È una fattura P.IVA — accantona automaticamente il 30% per le tasse
+      </label>
+      <table class="log">
+        <thead><tr><th>Data</th><th>Tipo</th><th>Macro</th><th>Categoria</th><th>Descrizione</th><th style="text-align:right">Importo</th><th></th></tr></thead>
+        <tbody id="movBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- RICORRENZE -->
+  <section class="view" id="view-ricorrenze">
+    <div class="card">
+      <h3>Nuova ricorrenza</h3>
+      <div class="add-row">
+        <select id="recKind" onchange="onKindChange('rec')">
+          <option value="Spesa">Spesa</option>
+          <option value="Entrata">Entrata</option>
+        </select>
+        <select id="recMacro" onchange="onMacroChange('rec')"></select>
+        <input type="text" id="recCategoria" placeholder="Categoria" list="recCatOptions">
+        <datalist id="recCatOptions"></datalist>
+        <input type="text" id="recDesc" placeholder="Descrizione">
+        <input type="number" id="recImporto" step="0.01" min="0.01" placeholder="Importo €" style="width:110px;">
+        <input type="date" id="recData" style="min-width:130px;">
+        <select id="recCadenza">
+          <option value="Settimanale">Settimanale</option>
+          <option value="Mensile" selected>Mensile</option>
+          <option value="Annuale">Annuale</option>
+        </select>
+        <button onclick="addRicorrenza()">Aggiungi</button>
+      </div>
+      <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 14px;">La data indica quando è iniziata/inizierà. Da quel momento, ogni volta che apri questa pagina, le occorrenze mancanti fino a oggi vengono generate automaticamente nei Movimenti.</p>
+      <table class="log">
+        <thead><tr><th>Dal</th><th>Tipo</th><th>Macro</th><th>Categoria</th><th>Cadenza</th><th style="text-align:right">Importo</th><th></th></tr></thead>
+        <tbody id="recBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- TASSE -->
+  <section class="view" id="view-tasse">
+    <div class="period-grid" id="taxSummary"></div>
+
+    <div class="card">
+      <h3>Scadenze fiscali</h3>
+      <div class="add-row">
+        <input type="text" id="scadDesc" placeholder="Descrizione (es. Saldo 2025 + 1° acconto 2026)" style="min-width:260px;">
+        <input type="number" id="scadImporto" step="0.01" min="0" placeholder="Importo €" style="width:110px;">
+        <input type="date" id="scadData" style="min-width:130px;">
+        <button onclick="addScadenza()">Aggiungi</button>
+      </div>
+      <table class="log">
+        <thead><tr><th>Scadenza</th><th>Descrizione</th><th style="text-align:right">Importo</th><th>Stato</th><th></th></tr></thead>
+        <tbody id="scadBody"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>Accantonamenti generati dalle fatture (30%)</h3>
+      <table class="log">
+        <thead><tr><th>Data</th><th>Descrizione</th><th style="text-align:right">Accantonato</th></tr></thead>
+        <tbody id="accBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <h3>Collegamento a Google Sheets</h3>
+    <p>Usa lo stesso URL della Web App di Apps Script già collegata al cruscotto lavoro — questa pagina scrive su una scheda separata ("Finanze") dello stesso foglio.</p>
+    <input type="text" id="webAppUrlInput" placeholder="https://script.google.com/macros/s/XXXX/exec">
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeSettings()">Annulla</button>
+      <button class="btn-primary" onclick="saveWebAppUrl()">Salva e connetti</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const HEADERS = ["ID","Kind","MacroCategoria","Categoria","Descrizione","Importo","Data","Ricorrenza","Template","Stato","Note"];
+let rows = [];
+let webAppUrl = null;
+
+const MACRO_CATEGORIES = {
+  'Casa': ['Affitto/Mutuo','Bollette','Spesa alimentare','Manutenzione casa','Arredamento'],
+  'Lavoro': ['Attrezzatura','Software/Abbonamenti','Formazione','Trasferte','Consulenze'],
+  'Trasporti': ['Carburante','Mezzi pubblici','Manutenzione auto','Assicurazione auto'],
+  'Salute': ['Farmacia','Visite mediche','Dentista'],
+  'Sport': ['Abbonamento palestra','Attrezzatura sportiva','Corsi / Eventi sportivi'],
+  'Hobby': ['Libri','Videogiochi','Musica / Strumenti','Collezionismo'],
+  'Svago': ['Ristoranti','Cinema / Eventi','Viaggi','Uscite'],
+  'Famiglia': ['Regali','Figli','Animali domestici'],
+  'Finanze': ['Risparmio','Investimenti','Tasse','Assicurazioni varie'],
+  'Entrate': ['Stipendio','Freelance / Consulenza','Rimborsi','Regali ricevuti','Investimenti (rendita)'],
+  'Altro': ['Varie'],
+};
+const MACRO_ORDER_EXPENSE = ['Casa','Lavoro','Trasporti','Salute','Sport','Hobby','Svago','Famiglia','Finanze','Altro'];
+const MACRO_ORDER_INCOME = ['Entrate','Altro'];
+
+function uid(prefix){ return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function toDateOnly(v){
+  if(v === '' || v == null) return '';
+  const s = String(v);
+  return s.length >= 10 ? s.slice(0,10) : s;
+}
+function escapeHtml(s){
+  const div = document.createElement('div'); div.textContent = s; return div.innerHTML;
+}
+function formatDate(iso){
+  const d = new Date(iso+'T00:00:00');
+  return d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'2-digit'});
+}
+
+function fromRow(r){
+  return {
+    id:r['ID'], kind:r['Kind'], macro:r['MacroCategoria']||'Altro', categoria:r['Categoria']||'Varie', desc:r['Descrizione']||'',
+    importo: (r['Importo']!=='' && r['Importo']!=null) ? parseFloat(r['Importo']) : 0,
+    data: toDateOnly(r['Data']), ricorrenza: r['Ricorrenza']||'', template: r['Template']==='SI',
+    stato: r['Stato']||'', note: r['Note']||''
+  };
+}
+function toRow(o){
+  return {
+    'ID':o.id, 'Kind':o.kind, 'MacroCategoria':o.macro||'Altro', 'Categoria':o.categoria, 'Descrizione':o.desc,
+    'Importo':o.importo, 'Data':o.data, 'Ricorrenza':o.ricorrenza||'', 'Template':o.template?'SI':'NO',
+    'Stato':o.stato||'', 'Note':o.note||''
+  };
+}
+function getMovimenti(){ return rows.filter(r=>r['Template']!=='SI' && (r['Kind']==='Entrata'||r['Kind']==='Spesa')).map(fromRow); }
+function getTemplates(){ return rows.filter(r=>r['Template']==='SI').map(fromRow); }
+function getAccantonamenti(){ return rows.filter(r=>r['Kind']==='Accantonamento').map(fromRow); }
+function getScadenze(){ return rows.filter(r=>r['Kind']==='ScadenzaFiscale').map(fromRow); }
+
+// ---------- Selettori Macro / Categoria dipendenti dal Tipo ----------
+function macrosFor(kind){ return kind==='Entrata' ? MACRO_ORDER_INCOME : MACRO_ORDER_EXPENSE; }
+function onKindChange(prefix){
+  const kind = document.getElementById(prefix+'Kind').value;
+  const macroSel = document.getElementById(prefix+'Macro');
+  macroSel.innerHTML = macrosFor(kind).map(m=>`<option value="${m}">${m}</option>`).join('');
+  onMacroChange(prefix);
+  if(prefix==='mov'){
+    const wrap = document.getElementById('movFatturaWrap');
+    wrap.style.display = kind==='Entrata' ? 'flex' : 'none';
+    if(kind!=='Entrata') document.getElementById('movIsFattura').checked = false;
+  }
+}
+function onMacroChange(prefix){
+  const macro = document.getElementById(prefix+'Macro').value;
+  const subs = MACRO_CATEGORIES[macro] || ['Varie'];
+  document.getElementById(prefix+'CatOptions').innerHTML = subs.map(c=>`<option value="${escapeHtml(c)}">`).join('');
+}
+
+// ---------- Connessione (stessa chiave storage del cruscotto lavoro: stesso URL, nessun doppio collegamento) ----------
+function hasClaudeStorage(){ return typeof window.storage !== 'undefined' && window.storage !== null; }
+async function loadWebAppUrl(){
+  if(hasClaudeStorage()){
+    try{ const res = await window.storage.get('sheet-webapp-url'); if(res && res.value) webAppUrl = res.value; }catch(e){}
+  } else {
+    try{ const v = localStorage.getItem('sheet-webapp-url'); if(v) webAppUrl = v; }catch(e){}
+  }
+}
+async function saveWebAppUrlToStorage(url){
+  webAppUrl = url;
+  if(hasClaudeStorage()){ try{ await window.storage.set('sheet-webapp-url', url); }catch(e){} }
+  else { try{ localStorage.setItem('sheet-webapp-url', url); }catch(e){} }
+}
+function openSettings(){
+  document.getElementById('webAppUrlInput').value = webAppUrl || '';
+  document.getElementById('settingsModal').classList.add('open');
+}
+function closeSettings(){ document.getElementById('settingsModal').classList.remove('open'); }
+async function saveWebAppUrl(){
+  const url = document.getElementById('webAppUrlInput').value.trim();
+  if(!url) return;
+  await saveWebAppUrlToStorage(url);
+  closeSettings();
+  await refreshFromSheet();
+}
+function setConnBadge(state, label){
+  const badge = document.getElementById('connBadge');
+  badge.classList.remove('ok','err','syncing');
+  if(state) badge.classList.add(state);
+  document.getElementById('connLabel').textContent = label;
+}
+function showSyncError(msg){
+  const el = document.getElementById('syncError');
+  if(msg){ el.textContent = msg; el.classList.add('show'); } else { el.classList.remove('show'); el.textContent=''; }
+}
+
+async function apiList(){
+  if(!webAppUrl) return [];
+  const res = await fetch(webAppUrl + '?action=list&sheet=finanze', { method:'GET' });
+  if(!res.ok) throw new Error('Errore di lettura dal foglio (' + res.status + ')');
+  return await res.json();
+}
+async function apiUpsert(obj){
+  if(!webAppUrl) return;
+  const res = await fetch(webAppUrl + '?sheet=finanze', {
+    method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify({ action:'upsert', data: toRow(obj) })
+  });
+  if(!res.ok) throw new Error('Errore di scrittura sul foglio (' + res.status + ')');
+}
+async function apiDelete(id){
+  if(!webAppUrl) return;
+  const res = await fetch(webAppUrl + '?sheet=finanze', {
+    method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify({ action:'delete', id })
+  });
+  if(!res.ok) throw new Error('Errore di eliminazione sul foglio (' + res.status + ')');
+}
+async function persist(obj, isDelete){
+  try{
+    if(isDelete) await apiDelete(obj.id); else await apiUpsert(obj);
+    showSyncError(null);
+  }catch(e){
+    showSyncError('Modifica salvata solo in locale: ' + e.message);
+  }
+}
+
+async function refreshFromSheet(){
+  if(!webAppUrl){ setConnBadge(null, 'Non collegato'); renderAll(); return; }
+  setConnBadge('syncing', 'Sincronizzo...');
+  try{
+    rows = await apiList();
+    setConnBadge('ok', 'Collegato');
+    showSyncError(null);
+    await generateRecurringOccurrences();
+    await seedTaxDeadlines();
+  }catch(e){
+    setConnBadge('err', 'Errore connessione');
+    showSyncError('Non riesco a leggere il foglio: ' + e.message + '. Controlla il collegamento nelle impostazioni.');
+  }
+  renderAll();
+}
+async function manualRefresh(){ await refreshFromSheet(); }
+
+// ---------- Tabs ----------
+document.querySelectorAll('nav.tabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('view-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ---------- Movimenti ----------
+async function addMovimento(){
+  const kind = document.getElementById('movKind').value;
+  const macro = document.getElementById('movMacro').value;
+  const categoria = document.getElementById('movCategoria').value.trim() || 'Varie';
+  const desc = document.getElementById('movDesc').value.trim();
+  const importo = parseFloat(document.getElementById('movImporto').value);
+  const data = document.getElementById('movData').value || todayStr();
+  const isFattura = kind==='Entrata' && document.getElementById('movIsFattura').checked;
+  if(!importo || importo<=0) return;
+  const obj = { id: uid('M'), kind, macro, categoria, desc, importo, data, ricorrenza:'', template:false, stato:'', note:'' };
+  rows.push(toRow(obj));
+
+  if(isFattura){
+    const quota = +(importo * 0.30).toFixed(2);
+    const acc = {
+      id: uid('A'), kind:'Accantonamento', macro:'Finanze', categoria:'Accantonamento tasse (30%)',
+      desc: 'Da fattura: ' + (desc || categoria), importo: quota, data, ricorrenza:'', template:false, stato:'',
+      note: 'Fattura:' + obj.id
+    };
+    rows.push(toRow(acc));
+    persist(acc, false);
+  }
+
+  document.getElementById('movCategoria').value='';
+  document.getElementById('movDesc').value='';
+  document.getElementById('movImporto').value='';
+  document.getElementById('movIsFattura').checked = false;
+  renderAll(); persist(obj, false);
+}
+function deleteMovimento(id){
+  rows = rows.filter(x=>x['ID']!==id);
+  renderAll(); persist({id}, true);
+}
+function renderMovimenti(){
+  const tbody = document.getElementById('movBody');
+  const list = [...getMovimenti()].sort((a,b)=> b.data.localeCompare(a.data));
+  tbody.innerHTML='';
+  if(list.length===0){ tbody.innerHTML = '<tr><td colspan="7" class="empty-note">Nessun movimento registrato.</td></tr>'; return; }
+  list.forEach(m=>{
+    const isIn = m.kind==='Entrata';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${formatDate(m.data)}</td>
+      <td><span class="tag" style="background:${isIn?'var(--in-soft)':'var(--out-soft)'};color:${isIn?'var(--in)':'var(--out)'}">${m.kind}</span></td>
+      <td><span class="tag macro">${escapeHtml(m.macro)}</span></td>
+      <td>${escapeHtml(m.categoria)}${m.desc?' · '+escapeHtml(m.desc):''}</td>
+      <td></td>
+      <td class="amt-cell ${isIn?'in':'out'}">${isIn?'+':'−'}€${m.importo.toFixed(2)}</td>
+      <td><button class="del-btn" onclick="deleteMovimento('${m.id}')">×</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ---------- Ricorrenze ----------
+async function addRicorrenza(){
+  const kind = document.getElementById('recKind').value;
+  const macro = document.getElementById('recMacro').value;
+  const categoria = document.getElementById('recCategoria').value.trim() || 'Varie';
+  const desc = document.getElementById('recDesc').value.trim();
+  const importo = parseFloat(document.getElementById('recImporto').value);
+  const data = document.getElementById('recData').value || todayStr();
+  const ricorrenza = document.getElementById('recCadenza').value;
+  if(!importo || importo<=0) return;
+  const obj = { id: uid('R'), kind, macro, categoria, desc, importo, data, ricorrenza, template:true, note:'' };
+  rows.push(toRow(obj));
+  document.getElementById('recCategoria').value='';
+  document.getElementById('recDesc').value='';
+  document.getElementById('recImporto').value='';
+  renderAll(); persist(obj, false);
+  await generateRecurringOccurrences();
+  renderAll();
+}
+function deleteRicorrenza(id){
+  rows = rows.filter(x=>x['ID']!==id);
+  renderAll(); persist({id}, true);
+}
+function renderRicorrenze(){
+  const tbody = document.getElementById('recBody');
+  const list = [...getTemplates()].sort((a,b)=> b.data.localeCompare(a.data));
+  tbody.innerHTML='';
+  if(list.length===0){ tbody.innerHTML = '<tr><td colspan="7" class="empty-note">Nessuna ricorrenza impostata.</td></tr>'; return; }
+  list.forEach(m=>{
+    const isIn = m.kind==='Entrata';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${formatDate(m.data)}</td>
+      <td><span class="tag" style="background:${isIn?'var(--in-soft)':'var(--out-soft)'};color:${isIn?'var(--in)':'var(--out)'}">${m.kind}</span></td>
+      <td><span class="tag macro">${escapeHtml(m.macro)}</span></td>
+      <td>${escapeHtml(m.categoria)}${m.desc?' · '+escapeHtml(m.desc):''}</td>
+      <td>${m.ricorrenza}</td>
+      <td class="amt-cell ${isIn?'in':'out'}">${isIn?'+':'−'}€${m.importo.toFixed(2)}</td>
+      <td><button class="del-btn" onclick="deleteRicorrenza('${m.id}')">×</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ---------- Generazione automatica delle occorrenze ricorrenti ----------
+function addPeriod(dateStr, cadence){
+  const d = new Date(dateStr+'T00:00:00');
+  if(cadence==='Settimanale'){ d.setDate(d.getDate()+7); }
+  else if(cadence==='Mensile'){
+    const day = d.getDate();
+    d.setDate(1);
+    d.setMonth(d.getMonth()+1);
+    const lastDay = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+    d.setDate(Math.min(day, lastDay));
+  } else if(cadence==='Annuale'){ d.setFullYear(d.getFullYear()+1); }
+  return d.toISOString().slice(0,10);
+}
+async function generateRecurringOccurrences(){
+  const today = todayStr();
+  const templates = getTemplates();
+  for(const t of templates){
+    if(!t.data || !t.ricorrenza) continue;
+    let cursor = t.data;
+    let guard = 0;
+    while(cursor <= today && guard < 500){
+      const marker = 'Ricorrente:' + t.id + ':' + cursor;
+      const exists = rows.some(r => r['Template']!=='SI' && (r['Note']||'').includes(marker));
+      if(!exists){
+        const obj = { id: uid('M'), kind:t.kind, macro:t.macro, categoria:t.categoria, desc:t.desc, importo:t.importo, data:cursor, ricorrenza:t.ricorrenza, template:false, note:marker };
+        rows.push(toRow(obj));
+        await persist(obj, false);
+      }
+      cursor = addPeriod(cursor, t.ricorrenza);
+      guard++;
+    }
+  }
+}
+
+// ---------- Totali per periodo ----------
+function startOfWeek(d){
+  const date = new Date(d+'T00:00:00');
+  const day = (date.getDay()+6)%7;
+  date.setDate(date.getDate()-day);
+  return date.toISOString().slice(0,10);
+}
+function endOfWeek(d){
+  const date = new Date(startOfWeek(d)+'T00:00:00');
+  date.setDate(date.getDate()+6);
+  return date.toISOString().slice(0,10);
+}
+function startOfMonth(d){ return d.slice(0,7)+'-01'; }
+function endOfMonth(d){
+  const date = new Date(d+'T00:00:00');
+  const last = new Date(date.getFullYear(), date.getMonth()+1, 0);
+  return last.toISOString().slice(0,10);
+}
+function startOfYear(d){ return d.slice(0,4)+'-01-01'; }
+function endOfYear(d){ return d.slice(0,4)+'-12-31'; }
+
+function totalsFor(start, end){
+  const list = getMovimenti().filter(m=>m.data>=start && m.data<=end);
+  const entrate = list.filter(m=>m.kind==='Entrata').reduce((s,m)=>s+m.importo,0);
+  const spese = list.filter(m=>m.kind==='Spesa').reduce((s,m)=>s+m.importo,0);
+  return { entrate, spese, saldo: entrate-spese };
+}
+
+function renderPeriodGrid(){
+  const today = todayStr();
+  const periods = [
+    { label:'Questa settimana', start:startOfWeek(today), end:endOfWeek(today) },
+    { label:'Questo mese', start:startOfMonth(today), end:endOfMonth(today) },
+    { label:'Quest\'anno', start:startOfYear(today), end:endOfYear(today) },
+  ];
+  const container = document.getElementById('periodGrid');
+  container.innerHTML = periods.map(p=>{
+    const t = totalsFor(p.start, p.end);
+    return `
+      <div class="period-card">
+        <h3>${p.label}</h3>
+        <div class="period-rows">
+          <div class="period-row"><span class="lbl">Entrate</span><span class="val" style="color:var(--in)">+€${t.entrate.toFixed(2)}</span></div>
+          <div class="period-row"><span class="lbl">Spese</span><span class="val" style="color:var(--out)">−€${t.spese.toFixed(2)}</span></div>
+          <div class="period-row saldo"><span class="lbl">Saldo</span><span class="val" style="color:${t.saldo>=0?'var(--in)':'var(--out)'}">${t.saldo>=0?'+':'−'}€${Math.abs(t.saldo).toFixed(2)}</span></div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderCatBreakdown(){
+  const today = todayStr();
+  const start = startOfMonth(today), end = endOfMonth(today);
+  const list = getMovimenti().filter(m=>m.kind==='Spesa' && m.data>=start && m.data<=end);
+  const container = document.getElementById('catBreakdown');
+  if(list.length===0){ container.innerHTML = '<div class="empty-note">Nessuna spesa registrata questo mese.</div>'; return; }
+
+  const byMacro = {};
+  list.forEach(m=>{
+    if(!byMacro[m.macro]) byMacro[m.macro] = { total:0, subs:{} };
+    byMacro[m.macro].total += m.importo;
+    byMacro[m.macro].subs[m.categoria] = (byMacro[m.macro].subs[m.categoria]||0) + m.importo;
+  });
+  const macroEntries = Object.entries(byMacro).sort((a,b)=>b[1].total-a[1].total);
+  const maxMacro = macroEntries[0][1].total;
+
+  container.innerHTML = macroEntries.map(([macro, data])=>{
+    const subEntries = Object.entries(data.subs).sort((a,b)=>b[1]-a[1]);
+    const subsHtml = subEntries.map(([cat,val])=>`
+      <div class="sub-row">
+        <span class="sub-name">${escapeHtml(cat)}</span>
+        <span class="sub-val">€${val.toFixed(2)}</span>
+      </div>
+    `).join('');
+    return `
+      <div class="macro-block">
+        <div class="macro-top">
+          <span class="macro-name">${escapeHtml(macro)}</span>
+          <span class="macro-bar-bg"><span class="macro-bar-fill" style="width:${(data.total/maxMacro*100).toFixed(0)}%"></span></span>
+          <span class="macro-val">€${data.total.toFixed(2)}</span>
+        </div>
+        <div class="sub-list">${subsHtml}</div>
+      </div>`;
+  }).join('');
+}
+
+// ---------- Sezione Tasse ----------
+async function addScadenza(){
+  const desc = document.getElementById('scadDesc').value.trim();
+  const importo = parseFloat(document.getElementById('scadImporto').value) || 0;
+  const data = document.getElementById('scadData').value;
+  if(!desc || !data) return;
+  const obj = { id: uid('S'), kind:'ScadenzaFiscale', macro:'Finanze', categoria:'Tasse', desc, importo, data, ricorrenza:'', template:false, stato:'Da pagare', note:'' };
+  rows.push(toRow(obj));
+  document.getElementById('scadDesc').value='';
+  document.getElementById('scadImporto').value='';
+  document.getElementById('scadData').value='';
+  renderAll(); persist(obj, false);
+}
+function toggleScadenza(id){
+  const r = rows.find(x=>x['ID']===id);
+  if(!r) return;
+  const obj = fromRow(r);
+  obj.stato = obj.stato==='Pagato' ? 'Da pagare' : 'Pagato';
+  Object.assign(r, toRow(obj));
+  renderAll(); persist(obj, false);
+}
+function deleteScadenza(id){
+  rows = rows.filter(x=>x['ID']!==id);
+  renderAll(); persist({id}, true);
+}
+function updateScadenzaImporto(id, val){
+  const r = rows.find(x=>x['ID']===id);
+  if(!r) return;
+  const obj = fromRow(r);
+  obj.importo = parseFloat(val) || 0;
+  Object.assign(r, toRow(obj));
+  persist(obj, false);
+}
+
+async function seedTaxDeadlines(){
+  const existing = getScadenze();
+  const has1 = existing.some(s => s.note.includes('Seed:saldo-acconto-2026'));
+  const has2 = existing.some(s => s.note.includes('Seed:secondo-acconto-2026'));
+  if(!has1){
+    const obj = { id: uid('S'), kind:'ScadenzaFiscale', macro:'Finanze', categoria:'Tasse', desc:'Saldo anno precedente + 1° acconto anno in corso', importo:0, data:'2026-06-30', ricorrenza:'', template:false, stato:'Da pagare', note:'Seed:saldo-acconto-2026' };
+    rows.push(toRow(obj));
+    await persist(obj, false);
+  }
+  if(!has2){
+    const obj = { id: uid('S'), kind:'ScadenzaFiscale', macro:'Finanze', categoria:'Tasse', desc:'2° acconto (o unico) anno in corso', importo:400, data:'2026-11-30', ricorrenza:'', template:false, stato:'Da pagare', note:'Seed:secondo-acconto-2026' };
+    rows.push(toRow(obj));
+    await persist(obj, false);
+  }
+}
+
+function renderScadenze(){
+  const tbody = document.getElementById('scadBody');
+  const list = [...getScadenze()].sort((a,b)=>a.data.localeCompare(b.data));
+  tbody.innerHTML='';
+  if(list.length===0){ tbody.innerHTML = '<tr><td colspan="5" class="empty-note">Nessuna scadenza impostata.</td></tr>'; return; }
+  const today = todayStr();
+  list.forEach(s=>{
+    const paid = s.stato==='Pagato';
+    const overdue = !paid && s.data < today;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="${overdue?'color:var(--danger);font-weight:600':''}">${formatDate(s.data)}</td>
+      <td>${escapeHtml(s.desc)}</td>
+      <td class="amt-cell out"><input type="number" step="0.01" min="0" value="${s.importo.toFixed(2)}" style="width:90px;font-family:'IBM Plex Mono',monospace;text-align:right;border:1px solid var(--line);border-radius:6px;padding:3px 6px;background:var(--bg-soft);" onchange="updateScadenzaImporto('${s.id}', this.value)"></td>
+      <td><span class="tag" style="background:${paid?'var(--in-soft)':'var(--out-soft)'};color:${paid?'var(--in)':'var(--out)'};cursor:pointer;" onclick="toggleScadenza('${s.id}')">${s.stato}</span></td>
+      <td><button class="del-btn" onclick="deleteScadenza('${s.id}')">×</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderAccantonamenti(){
+  const tbody = document.getElementById('accBody');
+  const list = [...getAccantonamenti()].sort((a,b)=>b.data.localeCompare(a.data));
+  tbody.innerHTML='';
+  if(list.length===0){ tbody.innerHTML = '<tr><td colspan="3" class="empty-note">Nessun accantonamento ancora generato. Spunta "È una fattura" quando registri un\'entrata per iniziare.</td></tr>'; return; }
+  list.forEach(a=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${formatDate(a.data)}</td>
+      <td>${escapeHtml(a.desc)}</td>
+      <td class="amt-cell out">€${a.importo.toFixed(2)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderTaxSummary(){
+  const accantonato = getAccantonamenti().reduce((s,a)=>s+a.importo,0);
+  const daPagare = getScadenze().filter(s=>s.stato!=='Pagato').reduce((s,a)=>s+a.importo,0);
+  const pagato = getScadenze().filter(s=>s.stato==='Pagato').reduce((s,a)=>s+a.importo,0);
+  const diff = accantonato - daPagare;
+  const container = document.getElementById('taxSummary');
+  container.innerHTML = `
+    <div class="period-card">
+      <h3>Accantonato per le tasse</h3>
+      <div class="period-rows"><div class="period-row saldo"><span class="lbl">Totale (30% fatture)</span><span class="val" style="color:var(--out)">€${accantonato.toFixed(2)}</span></div></div>
+    </div>
+    <div class="period-card">
+      <h3>Da pagare</h3>
+      <div class="period-rows">
+        <div class="period-row"><span class="lbl">Scadenze aperte</span><span class="val" style="color:var(--out)">€${daPagare.toFixed(2)}</span></div>
+        <div class="period-row"><span class="lbl">Già pagato</span><span class="val" style="color:var(--ink-soft)">€${pagato.toFixed(2)}</span></div>
+      </div>
+    </div>
+    <div class="period-card">
+      <h3>Copertura</h3>
+      <div class="period-rows"><div class="period-row saldo"><span class="lbl">Accantonato − Da pagare</span><span class="val" style="color:${diff>=0?'var(--in)':'var(--danger)'}">${diff>=0?'+':'−'}€${Math.abs(diff).toFixed(2)}</span></div></div>
+    </div>
+  `;
+}
+
+function renderTasseTab(){
+  renderTaxSummary();
+  renderScadenze();
+  renderAccantonamenti();
+}
+
+function renderAll(){
+  renderPeriodGrid();
+  renderCatBreakdown();
+  renderMovimenti();
+  renderRicorrenze();
+  renderTasseTab();
+}
+
+function downloadCsv(filename, tableRows){
+  const csv = tableRows.map(r=>r.map(cell=>{
+    let s = String(cell ?? '');
+    if(s.includes(',') || s.includes('"') || s.includes('\n')){ s = '"' + s.replace(/"/g,'""') + '"'; }
+    return s;
+  }).join(',')).join('\r\n');
+  const blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function exportFinanceCsv(){
+  const choice = document.getElementById('exportPeriod').value;
+  const today = todayStr();
+  let start = '0000-01-01', end = '9999-12-31';
+  if(choice==='settimana'){ start = startOfWeek(today); end = endOfWeek(today); }
+  else if(choice==='mese'){ start = startOfMonth(today); end = endOfMonth(today); }
+  else if(choice==='anno'){ start = startOfYear(today); end = endOfYear(today); }
+
+  const list = getMovimenti().filter(m=>m.data>=start && m.data<=end).sort((a,b)=>a.data.localeCompare(b.data));
+  const header = ['Data','Tipo','Macro-area','Categoria','Descrizione','Importo €'];
+  const body = list.map(m=>[formatDate(m.data), m.kind, m.macro, m.categoria, m.desc, m.importo.toFixed(2)]);
+  const totEntrate = list.filter(m=>m.kind==='Entrata').reduce((s,m)=>s+m.importo,0);
+  const totSpese = list.filter(m=>m.kind==='Spesa').reduce((s,m)=>s+m.importo,0);
+  body.push(['','','','','Totale entrate', totEntrate.toFixed(2)]);
+  body.push(['','','','','Totale spese', totSpese.toFixed(2)]);
+  body.push(['','','','','Saldo', (totEntrate-totSpese).toFixed(2)]);
+  downloadCsv('resoconto-finanze-' + choice + '-' + today + '.csv', [header, ...body]);
+}
+
+async function init(){
+  document.getElementById('movData').value = todayStr();
+  document.getElementById('recData').value = todayStr();
+  document.getElementById('todayBadge').textContent = new Date().toLocaleDateString('it-IT',{weekday:'long', day:'numeric', month:'long'});
+  onKindChange('mov');
+  onKindChange('rec');
+  await loadWebAppUrl();
+  await refreshFromSheet();
+  setInterval(refreshFromSheet, 30000);
+}
+init();
+</script>
+</body>
+</html>
