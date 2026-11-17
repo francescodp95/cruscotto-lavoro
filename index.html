@@ -177,7 +177,14 @@
   ul.task-list li:last-child{border-bottom:none;}
   ul.task-list li.done .task-title{text-decoration:line-through;color:var(--ink-soft);}
   ul.task-list li input[type=checkbox]{width:17px;height:17px;accent-color:var(--gold);cursor:pointer;flex-shrink:0;}
-  .task-title{flex:1;}
+  .task-title{flex:1;cursor:pointer;min-width:0;}
+  .task-title:hover{color:var(--farm);}
+  ul.task-list li{flex-wrap:wrap;}
+  .note-dot{font-size:12px;color:var(--gold);margin-left:4px;}
+  .task-note{flex-basis:100%;margin:2px 0 4px 27px;display:flex;flex-direction:column;gap:6px;}
+  .task-note label{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;}
+  .note-input{width:100%;min-height:110px;font:inherit;font-size:13px;line-height:1.5;color:var(--ink);background:var(--bg-soft);border:1px solid var(--line);border-radius:8px;padding:8px 10px;resize:vertical;}
+  .note-input:focus{outline:none;border-color:var(--gold);}
   .est-input{
     width:46px;font-family:'IBM Plex Mono',monospace;font-size:12px;
     border:1px solid var(--line);border-radius:6px;background:var(--bg-soft);
@@ -302,7 +309,6 @@
         </div>
         <button class="icon-btn" onclick="manualRefresh()" title="Aggiorna dal foglio">⟳</button>
         <button class="icon-btn" onclick="addArea()" title="Aggiungi una nuova area di lavoro">+</button>
-        <a class="icon-btn" href="https://claude.ai/artifact/YKbcotY6roacTTFGXroZb8" target="_blank" rel="noopener" title="Checklist Kommo" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center">✓</a>
       </div>
     </div>
     <div class="sync-error" id="syncError"></div>
@@ -609,7 +615,14 @@ async function apiDelete(id){
   if(!res.ok) throw new Error('Errore di eliminazione sul foglio (' + res.status + ')');
 }
 
+let refreshRunning = false;
 async function refreshFromSheet(){
+  // Evita due sincronizzazioni sovrapposte (il controllo ogni 30 s potrebbe partire mentre la prima scrive ancora)
+  if(refreshRunning) return;
+  refreshRunning = true;
+  try{ await refreshFromSheetInner(); } finally { refreshRunning = false; }
+}
+async function refreshFromSheetInner(){
   if(!webAppUrl){
     setConnBadge(null, 'Non collegato');
     renderAll();
@@ -626,6 +639,8 @@ async function refreshFromSheet(){
     await markRaspberryTaskDone();
     await mergeQuickTasks();
     await setAccountantTaskDeadline();
+    await syncKommoPlan();
+    setConnBadge('ok', 'Collegato');
   }catch(e){
     setConnBadge('err', 'Errore connessione');
     showSyncError('Non riesco a leggere il foglio: ' + e.message + '. Controlla il collegamento nelle impostazioni.');
@@ -713,6 +728,448 @@ async function mergeQuickTasks(){
       priority:item.priority, due:'', estHours:null, date: todayStr(), progress:0, hours:null, note:item.marker
     };
     rows.push(toRow(obj));
+    await persist(obj, false);
+  }
+}
+
+
+// ---------- Piano Kommo ordinato (17/11/2026) ----------
+// Scrive nel foglio le attività dell'area Kommo / CRM in ordine logico (numero davanti al titolo).
+// Ogni voce aggiornata riceve il marcatore nascosto KOMMO_PLAN_VER nella nota (prima di §):
+// le voci già marcate non vengono più toccate, quindi le spunte e le note scritte dopo restano.
+// Le voci esistenti mantengono lo stato Fatta/Aperta; eventuali note scritte a mano vengono conservate in fondo.
+const KOMMO_PLAN_VER = 'KPlan:20261117';
+const KOMMO_PLAN = [
+{
+"id": "K40",
+"step": 1,
+"title": "Caricare il nuovo index.html su GitHub (note + questa lista ordinata)",
+"pri": "alta",
+"note": "FASE 0 — Cruscotto\nPRIMA SERVE: niente, è il primo passo.\n\nPASSAGGI\n1. Entra su GitHub con l'account francescodp95 (NON FrancescoZN, altrimenti crea una copia).\n2. Repository cruscotto-lavoro → Add file → Upload files → trascina index.html → Commit changes.\n3. Aspetta 1–2 minuti, apri il cruscotto e ricarica con Ctrl+F5.\n4. La prima apertura scrive questa lista nel foglio: in alto vedi \"Aggiorno piano Kommo…\". Non chiudere la pagina finché non torna \"Collegato\" (1–2 minuti).\n5. Clicca il titolo di un'attività: si apre il riquadro Note e passaggi.",
+"done": false
+},
+{
+"id": "K41",
+"step": 2,
+"title": "Sicurezza: togliere il link dello script dal README e fare una nuova distribuzione",
+"pri": "alta",
+"note": "FASE 0 — Cruscotto\nPRIMA SERVE: passo 01 fatto e cruscotto aperto almeno una volta.\n\nPASSAGGI\n1. GitHub → cruscotto-lavoro → README.md → matita → cancella la riga col link script.google.com → Commit changes.\n2. Apri il foglio Google → Estensioni → Apps Script → Esegui il deployment → Gestisci deployment: archivia quello vecchio.\n3. Esegui il deployment → Nuovo deployment → App web (Esegui come: Me · Chi ha accesso: Chiunque) → copia il nuovo URL.\n4. Nel cruscotto: ⚙ impostazioni → incolla il nuovo URL → Salva e connetti. Ripetilo su ogni pc/telefono che usi.\n5. Mandami il nuovo URL in chat (non metterlo più nel README) così aggiorno il progetto.\n\nPerché: oggi chiunque legga il README può leggere e modificare il foglio.",
+"done": false
+},
+{
+"id": "K22",
+"step": 3,
+"title": "DECIDI: prescrizione nella scheda (inviata dal bot) o scritta in chat?",
+"pri": "alta",
+"note": "FASE 1 — Decisioni (prima di costruire: cambiano i bot)\nPRIMA SERVE: niente.\n\nPASSAGGI\n1. Proposta: il dottore scrive prodotti + Consiglio del Dottore nella scheda e un bot li manda al paziente con il totale quando la scheda va in Vendite.\n2. Scrivi qui la decisione: cambia il passo passo 23 e il catalogo (passo 47).",
+"done": false
+},
+{
+"id": "K25",
+"step": 4,
+"title": "DECIDI: sollecito automatico al cliente dopo 48 ore in Attesa Pagamento?",
+"pri": "media",
+"note": "FASE 1 — Decisioni (prima di costruire: cambiano i bot)\nPRIMA SERVE: niente.\n\nPASSAGGI\n1. Se sì, lo aggiungiamo dentro PROMEMORIA ATTESA PAGAMENTO (passo 13): pausa 48 h → template memo_pagamento_v2.\n2. Scrivi qui sì/no.",
+"done": false
+},
+{
+"id": "K26",
+"step": 5,
+"title": "DECIDI: messaggio automatico al paziente con il tracking quando entra in Spedito?",
+"pri": "media",
+"note": "FASE 1 — Decisioni (prima di costruire: cambiano i bot)\nPRIMA SERVE: niente.\n\nPASSAGGI\n1. Testo normale se la chat è aperta, template ordine_spedito_v2 se è chiusa.\n2. Se sì, lo aggiungiamo in BOT SPEDITO (passo 22).",
+"done": false
+},
+{
+"id": "K23",
+"step": 6,
+"title": "DECIDI: coda consulenze con numero in coda o tempo medio di risposta?",
+"pri": "media",
+"note": "FASE 1 — Decisioni (prima di costruire: cambiano i bot)\nPRIMA SERVE: niente.\n\nPASSAGGI\n1. Numero in coda = serve Make (Kommo non conta le schede).\n2. Tempo medio = basta cambiare il testo di CODA CONSULENZE (passo 21).",
+"done": false
+},
+{
+"id": "K24",
+"step": 7,
+"title": "DECIDI: orario di assunzione nelle terapie del paziente o nella prescrizione?",
+"pri": "media",
+"note": "FASE 1 — Decisioni (prima di costruire: cambiano i bot)\nPRIMA SERVE: niente.\n\nPASSAGGI\n1. Terapie già in corso = domanda in Prima Consulenza (Welcome bot).\n2. Prescrizione = campo nella scheda compilato dal dottore.",
+"done": false
+},
+{
+"id": "K27",
+"step": 8,
+"title": "DECIDI: consenso marketing — chiedere al consulente privacy",
+"pri": "media",
+"note": "FASE 1 — Decisioni (prima di costruire: cambiano i bot)\nPRIMA SERVE: niente. Mandagli la domanda subito, la risposta arriverà con calma.\n\nPASSAGGI\n1. Serve per guida fegato, promemoria riordino e broadcast promozionali (è diverso dal consenso ai dati sanitari).\n2. Blocca i passi passo 43, passo 44, passo 45.",
+"done": false
+},
+{
+"id": "K14",
+"step": 9,
+"title": "Template WhatsApp senza nome: creare le versioni _v2 e mandarle in approvazione",
+"pri": "alta",
+"note": "FASE 2 — Fondamenta in Kommo\nPRIMA SERVE: niente. Fallo subito: Meta ci mette da pochi minuti a 1 giorno, intanto vai avanti.\n\nPASSAGGI\n1. riapertura_contatto_v2 (Farmacia Paitone), consulenza_beppe_v2 (Consulenza Dr Costa), consulenza_in_attesa_v2 (Alberto), memo_pagamento_v2 e ordine_spedito_v2 (Farmacia Paitone).\n2. Categoria Utility, stessi bottoni, nessun nome del cliente nel testo.\n3. I vecchi li cancelli solo al passo passo 33.",
+"done": false
+},
+{
+"id": "K42",
+"step": 10,
+"title": "Creare i campi nuovi: ULTIMA COLONNA, DATA SENZA RISPOSTA, RIENTRO RAPIDO, INDIRIZZO SPEDIZIONE",
+"pri": "alta",
+"note": "FASE 2 — Fondamenta in Kommo\nPRIMA SERVE: niente. Servono ai passi passo 15, passo 18 e a tutta la Fase 4.\n\nPASSAGGI\n1. Impostazioni → Campi → scheda (Lead): ULTIMA COLONNA = Testo.\n2. Sempre sulla scheda: DATA SENZA RISPOSTA = Data.\n3. Sempre sulla scheda: RIENTRO RAPIDO = Casella di spunta (flag).\n4. Contatto: INDIRIZZO SPEDIZIONE = Area di testo (testo lungo).",
+"done": false
+},
+{
+"id": "K05",
+"step": 11,
+"title": "Eliminare la colonna Pronto Spedizione",
+"pri": "alta",
+"note": "FASE 2 — Fondamenta in Kommo\nPRIMA SERVE: niente. Va fatto prima della Fase 4, così i filtri colonne dei bot nuovi sono già giusti.\n\nPASSAGGI\n1. Sposta le schede presenti in Spedito o Attesa Pagamento.\n2. Pipeline → Automatizza: togli eventuali bot/automazioni di quella colonna.\n3. Avvisa Daniela ed Elena: il percorso ora è Attesa Pagamento → Spedito.\n4. Elimina la colonna.",
+"done": false
+},
+{
+"id": "K36",
+"step": 12,
+"title": "Salesbot #10 → CHIUDI CONVERSAZIONE su Closed-won e Closed-lost",
+"pri": "alta",
+"note": "FASE 2 — Fondamenta in Kommo\nPRIMA SERVE: niente.\n\nPASSAGGI\n1. Perché: Kommo crea una scheda nuova (e fa partire il Welcome bot) solo se inizia una conversazione NUOVA. Se resta aperta, il messaggio finisce nella scheda vecchia anche se è in Closed-won.\n2. Apri Salesbot #10 (fa \"Mark conversation closed\") e rinominalo CHIUDI CONVERSAZIONE.\n3. Trigger: spostato in Closed-won E spostato in Closed-lost.\n4. Prova: sposta una scheda di prova in Closed-won, scrivi dal telefono → deve nascere una scheda nuova in Incoming leads con il menu.\n5. Schede già chiuse con conversazione aperta: apri la chat → menu della conversazione → Chiudi.",
+"done": false
+},
+{
+"id": "K39",
+"step": 13,
+"title": "Salesbot #4 → PROMEMORIA ATTESA PAGAMENTO (trigger solo Attesa Pagamento)",
+"pri": "alta",
+"note": "FASE 2 — Fondamenta in Kommo\nPRIMA SERVE: passo 04 deciso (per sapere se aggiungere il sollecito).\n\nPASSAGGI\n1. Perché: ha mandato \"MANDARE LINK NEXI\" su una scheda già in Closed-won.\n2. Apri Salesbot #4 → Execution condition: deve essere SOLO \"spostato in Attesa Pagamento\". Togli tutto il resto (messaggio in arrivo, tutte le colonne, ecc.).\n3. Rinominalo PROMEMORIA ATTESA PAGAMENTO.\n4. Testo del messaggio interno (Responsible user): \"💳 {{lead.name}}: inviare link Nexi o dati bonifico. A pagamento ricevuto spostare in Spedito.\"\n5. Se al passo passo 04 hai detto sì: dopo il messaggio interno → Pausa 48 h → template memo_pagamento_v2 → Stop.\n6. Nella scheda della sig. Vicentini guarda la cronologia: se era passata da Attesa Pagamento, il problema era solo la conversazione aperta (passo 12).\n\nQuesto passo sostituisce anche \"Nuovo bot PROMEMORIA ATTESA PAGAMENTO\": il bot c'è già, è Salesbot #4.",
+"done": false
+},
+{
+"id": "K06",
+"step": 14,
+"title": "Controllare a mano i tag dei pazienti di Beppe",
+"pri": "media",
+"note": "FASE 2 — Fondamenta in Kommo\nPRIMA SERVE: niente.\n\nPASSAGGI\n1. CONSOLIDA era partito 21 volte con la logica sbagliata prima della correzione.\n2. Liste → Contatti → filtra tag DOTTORE: chi è paziente di Beppe → togli DOTTORE, metti BEPPE.",
+"done": false
+},
+{
+"id": "K01",
+"step": 15,
+"title": "Welcome bot: salvare l'indirizzo nel campo INDIRIZZO SPEDIZIONE",
+"pri": "alta",
+"note": "FASE 3 — Ritocchi ai bot che esistono già\nPRIMA SERVE: passo 10 (campo creato).\n\nPASSAGGI\n1. Ramo Nuovo Ordine, dopo la Validation dei dati di spedizione.\n2. Set field → main contact → INDIRIZZO SPEDIZIONE → Client message.\n3. Mettilo sia nel ramo dati completi sia in None of the conditions.",
+"done": false
+},
+{
+"id": "K02",
+"step": 16,
+"title": "Welcome bot: ramo dati di spedizione incompleti",
+"pri": "alta",
+"note": "FASE 3 — Ritocchi ai bot che esistono già\nPRIMA SERVE: passo 15.\n\nPASSAGGI\n1. Validation → None of the conditions → Set field INDIRIZZO SPEDIZIONE (già fatto al passo prima).\n2. Send internal message → Responsible user: \"⚠️ {{lead.name}}: dati di spedizione incompleti, richiederli al cliente\".\n3. Poi stesso percorso del ramo completo (\"Grazie, un operatore la contatterà\" → Stop).",
+"done": false
+},
+{
+"id": "K04",
+"step": 17,
+"title": "Welcome bot: aggiungere il 375 nei Contatti",
+"pri": "media",
+"note": "FASE 3 — Ritocchi ai bot che esistono già\nPRIMA SERVE: niente.\n\nPASSAGGI\n1. Lista Contatti: \"Ordini da ritirare in farmacia: 375 659 3543\".\n2. Se vuoi, anche nel messaggio della voce \"Ordine per Farmacia\".",
+"done": false
+},
+{
+"id": "K43",
+"step": 18,
+"title": "Welcome bot: scrivere ULTIMA COLONNA = MENU prima di mandare in Senza Risposta",
+"pri": "alta",
+"note": "FASE 3 — Ritocchi ai bot che esistono già\nPRIMA SERVE: passo 10 (campo creato).\n\nPASSAGGI\n1. Nel WELCOME BOT v2 trova OGNI blocco \"Change lead status → Senza Risposta\" (menu senza risposta, catena Posologia, ecc.).\n2. Subito PRIMA di ognuno aggiungi: Set field → Lead → ULTIMA COLONNA → testo fisso MENU.\n3. Salva il bot.\n\nPerché: se è il Welcome bot a parcheggiare la scheda, quando il cliente risponde ci pensa lui. MENU dice al bot RISPOSTA DA SENZA RISPOSTA (passo 28) di non intervenire.",
+"done": false
+},
+{
+"id": "K44",
+"step": 19,
+"title": "AUTOM VENDITE v2: non riassegnare la scheda se SEGUITO DA è già compilato",
+"pri": "alta",
+"note": "FASE 3 — Ritocchi ai bot che esistono già\nPRIMA SERVE: niente. Va fatto prima del passo passo 28.\n\nPASSAGGI\n1. All'inizio del bot aggiungi un blocco Condition → Lead → SEGUITO DA → Not filled → collega qui il percorso di oggi (Round Robin, SEGUITO DA, messaggio interno).\n2. None of the conditions → Stop.\n3. Salva.\n\nPerché: quando una scheda torna in Vendite da Senza Risposta (o la sposti tu), resta alla stessa ragazza e non riparte il giro di assegnazione.",
+"done": false
+},
+{
+"id": "K07",
+"step": 20,
+"title": "AUTOM VENDITE v2: completare il messaggio interno",
+"pri": "media",
+"note": "FASE 3 — Ritocchi ai bot che esistono già\nPRIMA SERVE: passo 19.\n\nPASSAGGI\n1. Nel blocco Send internal message aggiungi in fondo: \"Da compilare: prodotti nella scheda, metodo di pagamento, indirizzo di spedizione.\"",
+"done": false
+},
+{
+"id": "K03",
+"step": 21,
+"title": "CODA CONSULENZE: completare il ramo Operatore",
+"pri": "media",
+"note": "FASE 3 — Ritocchi ai bot che esistono già\nPRIMA SERVE: passo 06 deciso (testo della coda).\n\nPASSAGGI\n1. Dopo il blocco Change lead status → Problemi Spedizioni/Assistenza: Change responsible user (o Round Robin Daniela/Elena).\n2. Messaggio al cliente: \"Perfetto, la mettiamo in contatto con un nostro operatore che le risponderà il prima possibile\" → Stop.",
+"done": false
+},
+{
+"id": "K09",
+"step": 22,
+"title": "BOT SPEDITO: avviso se manca il codice tracking",
+"pri": "media",
+"note": "FASE 3 — Ritocchi ai bot che esistono già\nPRIMA SERVE: passo 05 deciso.\n\nPASSAGGI\n1. Dopo il Set field ULTIMO ORDINE e prima della Pausa: Condition → Lead → ID TRACKING → Not filled → Send internal message \"🚚 {{lead.name}}: manca il codice tracking\" → Pausa.\n2. None of the conditions → Pausa.\n3. Se al passo passo 05 hai detto sì: nel ramo con tracking manda al cliente il messaggio col link.",
+"done": false
+},
+{
+"id": "K10",
+"step": 23,
+"title": "Nuovo bot PROMEMORIA FINE CONSULENZA",
+"pri": "media",
+"note": "FASE 3 — Ritocchi ai bot che esistono già\nPRIMA SERVE: passo 03 deciso (se la prescrizione va nella scheda, questo bot cambia).\n\nPASSAGGI\n1. Trigger: spostato in Vendite e in Attesa Pagamento.\n2. Condition → Lead → Consiglio del Dottore → Not filled → messaggio interno ad Alberto/Beppe: \"mancano prodotti e posologia per {{lead.name}}\" → Stop.\n3. None of the conditions → Stop.",
+"done": false
+},
+{
+"id": "K45",
+"step": 24,
+"title": "SR 1/6 — Nuovo bot TRACCIA COLONNA",
+"pri": "alta",
+"note": "FASE 4 — Nuova logica Senza Risposta (rispetta l'ordine)\nPRIMA SERVE: passo 10 e passo 11.\n\nPASSAGGI\n1. Nuovo Salesbot \"TRACCIA COLONNA\": un solo blocco Set field → Lead → ULTIMA COLONNA → {{lead.status_id}} → Stop.\n2. Trigger (Pipeline, \"Created or moved to\") su: Prima Consulenza, Seconda Consulenza, Posologia, Consulenza Beppe, Info Prodotti, Vendite, Attesa Pagamento, Problemi Spedizioni/Assistenza.\n3. NON su: Incoming leads, Senza Risposta, Perditempo, Spedito, Closed-won/lost.\n4. Prova: sposta una scheda di prova in Vendite → ULTIMA COLONNA deve mostrare 111689043.\n5. Se resta vuoto o compare il testo {{lead.status_id}}, scrivimelo: c'è un piano B (un mini-bot per colonna con un valore fisso).\n\nServe a ricordare da quale colonna arriva la scheda (vale anche per le colonne del dottore: se le sposti a mano in Senza Risposta, tornano indietro).",
+"done": false
+},
+{
+"id": "K46",
+"step": 25,
+"title": "SR 2/6 — Leggere i numeri di Consulenza Beppe e Attesa Pagamento",
+"pri": "alta",
+"note": "FASE 4 — Nuova logica Senza Risposta (rispetta l'ordine)\nPRIMA SERVE: passo 24 funzionante.\n\nPASSAGGI\n1. Sposta la scheda di prova in Consulenza Beppe → guarda ULTIMA COLONNA → scrivi qui il numero.\n2. Stessa cosa con Attesa Pagamento.\n3. Riportala dove vuoi (o eliminala).\n\nNumeri delle colonne già noti: Prima Consulenza 111672539 · Seconda Consulenza 111672543 · Posologia 111672547 · Info Prodotti 111689039 · Vendite 111689043 · Problemi Spedizioni/Assistenza 111842707 · Senza Risposta 111689059. Mancano Consulenza Beppe e Attesa Pagamento.",
+"done": false
+},
+{
+"id": "K47",
+"step": 26,
+"title": "SR 3/6 — Nuovo bot ENTRATA SENZA RISPOSTA",
+"pri": "alta",
+"note": "FASE 4 — Nuova logica Senza Risposta (rispetta l'ordine)\nPRIMA SERVE: passo 10.\n\nPASSAGGI\n1. Prima di costruirlo: Pipeline → Automatizza → colonna Senza Risposta. Annota qui quali bot partono già lì (es. AUTOM PERDITEMPO) e mandameli.\n2. Nuovo Salesbot \"ENTRATA SENZA RISPOSTA\": Set field → Lead → DATA SENZA RISPOSTA → {{current_date}}.\n3. Set field → Lead → RIENTRO RAPIDO → acceso (spuntato) → Stop.\n4. Trigger: Created or moved to → Senza Risposta.\n5. Prova: sposta la scheda di prova in Senza Risposta → data di oggi + spunta accesa.\n\nVale sia per lo spostamento a mano sia per quello automatico dopo 7 giorni.",
+"done": false
+},
+{
+"id": "K48",
+"step": 27,
+"title": "SR 4/6 — Nuovo bot FINE RIENTRO RAPIDO (48 ore)",
+"pri": "alta",
+"note": "FASE 4 — Nuova logica Senza Risposta (rispetta l'ordine)\nPRIMA SERVE: passo 26.\n\nPASSAGGI\n1. Nuovo Salesbot \"FINE RIENTRO RAPIDO\": Set field → Lead → RIENTRO RAPIDO → spento → Stop.\n2. Trigger a tempo: \"48 hours after\" → campo DATA SENZA RISPOSTA.\n3. Filtro \"For all leads with: Lead stage\" → solo Senza Risposta.\n\nNota: il campo data non ha l'ora, quindi la finestra reale va da 1 a 2 giorni (in linea con \"entro 1/2 gg\"). Per 2 giorni pieni metti 72 ore.",
+"done": false
+},
+{
+"id": "K49",
+"step": 28,
+"title": "SR 5/6 — Nuovo bot RISPOSTA DA SENZA RISPOSTA",
+"pri": "alta",
+"note": "FASE 4 — Nuova logica Senza Risposta (rispetta l'ordine)\nPRIMA SERVE: passo 18, passo 19, passo 25, passo 26, passo 27.\n\nPASSAGGI\n1. Prima: apri i trigger del WELCOME BOT v2. Se c'è un trigger \"messaggio in arrivo\" che vale anche per Senza Risposta, togli Senza Risposta da quel filtro (altrimenti partono due bot insieme).\n2. Nuovo Salesbot \"RISPOSTA DA SENZA RISPOSTA\". Trigger: messaggio in arrivo (Incoming message), tutti i canali, filtro colonna = solo Senza Risposta.\n3. Blocco 1 — Condition: ULTIMA COLONNA Not filled → Stop · ULTIMA COLONNA = MENU → Stop · None of the conditions → Blocco 2.\n4. Blocco 2 — Condition: RIENTRO RAPIDO spento → Start bot WELCOME BOT v2 → Stop · None of the conditions → Blocco 3.\n5. Blocco 3 — Condition, una riga per colonna: ULTIMA COLONNA = 111672539 → Change lead status Prima Consulenza · 111672543 → Seconda Consulenza · 111672547 → Posologia · [numero letto al passo 25] → Consulenza Beppe · 111689039 → Info Prodotti · 111689043 → Vendite · [numero letto al passo 25] → Attesa Pagamento · 111842707 → Problemi Spedizioni/Assistenza.\n6. Dopo ogni Change lead status: Send internal message → Responsible user: \"↩️ {{lead.name}} ha risposto: scheda riportata nella sua colonna\" → Stop.\n7. None of the conditions del Blocco 3 → messaggio interno \"⚠️ {{lead.name}} ha risposto da Senza Risposta, colonna non riconosciuta\" → Stop.\n\nRisultato: risposta entro 48 h → torna nella colonna di prima; dopo 48 h → menu iniziale; se l'aveva parcheggiata il Welcome bot (MENU) → continua il Welcome bot.",
+"done": false
+},
+{
+"id": "K50",
+"step": 29,
+"title": "SR 6/6 — Nuovo bot SILENZIO 7 GIORNI (solo colonne vendite)",
+"pri": "alta",
+"note": "FASE 4 — Nuova logica Senza Risposta (rispetta l'ordine)\nPRIMA SERVE: passo 24–passo 28 tutti fatti, altrimenti le schede finiscono in Senza Risposta senza poter tornare.\n\nPASSAGGI\n1. Nuovo Salesbot \"SILENZIO 7 GIORNI\": Change lead status → Senza Risposta → Stop.\n2. Trigger: \"168 hours after last incoming message\", tutti i canali.\n3. Filtro colonne: Info Prodotti, Vendite, Attesa Pagamento, Problemi Spedizioni/Assistenza (le colonne delle ragazze). Niente colonne del dottore, niente Spedito.\n4. Le schede già ferme da prima di oggi potrebbero non essere spostate: controllale a mano una volta.\n\nConta 7 giorni dall'ultimo messaggio del CLIENTE. Se togli Problemi o Attesa Pagamento dal filtro, scrivilo qui.",
+"done": false
+},
+{
+"id": "K11",
+"step": 30,
+"title": "Creare le 15 risposte rapide",
+"pri": "media",
+"note": "FASE 5 — Risposte rapide e template\nPRIMA SERVE: niente.\n\nPASSAGGI\n1. Chat templates → template normale (non WhatsApp).\n2. nonrisponde, ricontatto, riepilogo, presoincarico, bonifico, contabile, prontobonifico, prontocontrassegno, spedito, costispedizione, orari, dove, ritiro, artemisia, natale.\n3. Testi nella chat del 17/11.",
+"done": false
+},
+{
+"id": "K12",
+"step": 31,
+"title": "Allegare il PDF dei dati bancari alla risposta rapida bonifico",
+"pri": "bassa",
+"note": "FASE 5 — Risposte rapide e template\nPRIMA SERVE: passo 30.\n\nPASSAGGI\n1. Apri la risposta rapida \"bonifico\" → allega il PDF → salva.",
+"done": false
+},
+{
+"id": "K13",
+"step": 32,
+"title": "Provare {{lead.price}} in una risposta rapida",
+"pri": "bassa",
+"note": "FASE 5 — Risposte rapide e template\nPRIMA SERVE: passo 30.\n\nPASSAGGI\n1. In prontobonifico / prontocontrassegno metti {{lead.price}} al posto di XX,00.\n2. Prova in chat: se viene sostituito con il valore della scheda, non serve più scriverlo a mano.",
+"done": false
+},
+{
+"id": "K15",
+"step": 33,
+"title": "Cancellare i 5 template vecchi con il nome",
+"pri": "media",
+"note": "FASE 5 — Risposte rapide e template\nPRIMA SERVE: passo 09: tutti i _v2 in stato Approved.\n\nPASSAGGI\n1. Cancella: riapertura_contatto, consulenza_beppe, consulenza_in_attesa, MEMO PAGAMENTO, ordine_spedito.\n2. Controlla che nessun bot usi ancora i vecchi (CODA CONSULENZE, promemoria).",
+"done": false
+},
+{
+"id": "K16",
+"step": 34,
+"title": "Prova: giro completo del Welcome bot dal telefono",
+"pri": "alta",
+"note": "FASE 6 — Prove dal telefono e go-live\nPRIMA SERVE: Fasi 2–4 finite.\n\nPASSAGGI\n1. Prova ogni voce del menu (10 voci).\n2. Rispondi scrivendo invece di usare i bottoni.\n3. Non rispondere al menu: dopo 30 min la scheda va in Senza Risposta con ULTIMA COLONNA = MENU.\n4. Poi scrivi: deve rispondere SOLO il Welcome bot (un messaggio, non due).",
+"done": false
+},
+{
+"id": "K35",
+"step": 35,
+"title": "Prova: nuova logica Senza Risposta",
+"pri": "alta",
+"note": "FASE 6 — Prove dal telefono e go-live\nPRIMA SERVE: Fase 4 finita.\n\nPASSAGGI\n1. Scheda di prova in Vendite → spostala a mano in Senza Risposta → DATA SENZA RISPOSTA = oggi, RIENTRO RAPIDO acceso.\n2. Scrivi dal telefono → torna in Vendite, messaggio interno alla ragazza, SEGUITO DA invariato, nessun messaggio automatico al cliente.\n3. Ripeti con Prima Consulenza: controlla che AUTOMAZIONE DOTTORE non mandi messaggi al paziente al rientro (se li manda, scrivimelo).\n4. Rientro scaduto: rimetti in Senza Risposta, togli a mano la spunta RIENTRO RAPIDO (simula le 48 h) → scrivi → deve partire il menu del Welcome bot.\n5. 7 giorni: metti per prova SILENZIO 7 GIORNI a 1 ora, scheda di prova in Info Prodotti, aspetta → va in Senza Risposta. Poi rimetti 168 ore!\n6. Scrivi qui cosa hai visto.",
+"done": false
+},
+{
+"id": "K17",
+"step": 36,
+"title": "Prova: consenso privacy doppio giro",
+"pri": "alta",
+"note": "FASE 6 — Prove dal telefono e go-live\nPRIMA SERVE: niente.\n\nPASSAGGI\n1. 1° Prima Consulenza: chiede l'informativa, salva consenso, DATA CONSENSO e versione sul contatto.\n2. 2° Prima Consulenza dallo stesso numero: deve saltare l'informativa.",
+"done": false
+},
+{
+"id": "K18",
+"step": 37,
+"title": "Prova: CODA CONSULENZE con trigger provvisorio",
+"pri": "media",
+"note": "FASE 6 — Prove dal telefono e go-live\nPRIMA SERVE: passo 21.\n\nPASSAGGI\n1. Metti il trigger a 1 ora.\n2. Prova \"Resto in Attesa\" (tag SOLLECITO) e la risposta scritta (attendere/operatore).\n3. Rimetti 23 ore!",
+"done": false
+},
+{
+"id": "K19",
+"step": 38,
+"title": "Prova: tag e campi lungo il percorso",
+"pri": "media",
+"note": "FASE 6 — Prove dal telefono e go-live\nPRIMA SERVE: passo 19.\n\nPASSAGGI\n1. Prima Consulenza → responsabile Alberto, CONSULENZA DI: ALBERTO.\n2. Sposta in Consulenza Beppe → Beppe, tag BEPPE sul contatto.\n3. Poi Vendite → SEGUITO DA: Daniela/Elena, SOLLECITO tolto, tag contatto corretto.\n4. Rimettila in Vendite: la ragazza NON deve cambiare.",
+"done": false
+},
+{
+"id": "K20",
+"step": 39,
+"title": "Prova: BOT SPEDITO e link tracking",
+"pri": "media",
+"note": "FASE 6 — Prove dal telefono e go-live\nPRIMA SERVE: passo 22.\n\nPASSAGGI\n1. Scheda in Spedito: ULTIMO ORDINE sul contatto = oggi.\n2. Senza ID TRACKING → deve arrivare l'avviso interno.\n3. Scrivi dal telefono: deve ripartire il Welcome bot.\n4. Prova il link tracking con un codice vero.",
+"done": false
+},
+{
+"id": "K37",
+"step": 40,
+"title": "Prova: messaggi o allegati dei clienti che non si vedono in Kommo",
+"pri": "media",
+"note": "FASE 6 — Prove dal telefono e go-live\nPRIMA SERVE: niente.\n\nPASSAGGI\n1. Cause possibili: con Coexistence non passano \"visualizza una volta\", posizione in tempo reale, messaggi modificati/cancellati, gruppi, chiamate; oppure formato non supportato (foto HEIC, video lunghi).\n2. Apri la chat del cliente sul telefono: che tipo di messaggio era?\n3. In Kommo c'è un avviso tipo \"messaggio non supportato\"?\n4. Dal tuo telefono manda al numero Vendite: foto, PDF, vocale, file Word. Segna qui quali non arrivano.\n5. Se un tipo normale non arriva: supporto Kommo con il numero della conversazione.",
+"done": false
+},
+{
+"id": "K38",
+"step": 41,
+"title": "Prova: reazioni ai messaggi (emoji)",
+"pri": "bassa",
+"note": "FASE 6 — Prove dal telefono e go-live\nPRIMA SERVE: niente.\n\nPASSAGGI\n1. Apri una chat WhatsApp di prova, passa il mouse sul messaggio e scegli la reazione.\n2. Controlla sul tuo telefono che arrivi.\n3. Se il menu non compare sulle chat WhatsApp, con il tuo collegamento non è supportato: annotalo qui.",
+"done": false
+},
+{
+"id": "K21",
+"step": 42,
+"title": "Formazione al team (15 minuti) — ultimo passo prima del go-live",
+"pri": "alta",
+"note": "FASE 6 — Prove dal telefono e go-live\nPRIMA SERVE: tutte le prove della Fase 6.\n\nPASSAGGI\n1. Alberto, Beppe, Daniela, Elena: dove vedono le chat, spostare le schede a fine lavoro, campi da compilare.\n2. \"/\" per risposte rapide e template, regola delle 24 ore.\n3. Senza Risposta: se il cliente risponde entro 2 giorni la scheda torna da sola; dopo 7 giorni di silenzio nelle colonne vendite ci va da sola.",
+"done": false
+},
+{
+"id": "K28",
+"step": 43,
+"title": "Broadcast nuovo_numero_dottore",
+"pri": "bassa",
+"note": "FASE 7 — Dopo il go-live\nPRIMA SERVE: passo 08.\n\nPASSAGGI\n1. Automazioni → Broadcasting, solo ai contatti con consenso privacy.",
+"done": false
+},
+{
+"id": "K29",
+"step": 44,
+"title": "Bot GUIDA FEGATO",
+"pri": "bassa",
+"note": "FASE 7 — Dopo il go-live\nPRIMA SERVE: passo 08.\n\nPASSAGGI\n1. 2 ore dopo Closed-won, template Marketing guida_fegato.\n2. Una volta sola per paziente (campo GUIDA FEGATO INVIATA).",
+"done": false
+},
+{
+"id": "K30",
+"step": 45,
+"title": "Promemoria riordino",
+"pri": "bassa",
+"note": "FASE 7 — Dopo il go-live\nPRIMA SERVE: passo 08.\n\nPASSAGGI\n1. Trigger \"X ore dopo ULTIMO ORDINE\" (es. 720 h = 30 giorni), template Marketing.\n2. Bottone \"Vorrei riordinare\" → ramo Riordino.",
+"done": false
+},
+{
+"id": "K31",
+"step": 46,
+"title": "Richiesta recensioni con il bot NPS tradotto",
+"pri": "bassa",
+"note": "FASE 7 — Dopo il go-live\nPRIMA SERVE: niente.\n\nPASSAGGI\n1. Voto 9–10 → link recensione Google; voto basso → operatore.",
+"done": false
+},
+{
+"id": "K32",
+"step": 47,
+"title": "Prodotti nella scheda: catalogo",
+"pri": "bassa",
+"note": "FASE 7 — Dopo il go-live\nPRIMA SERVE: passo 03.\n\nPASSAGGI\n1. Importare il listino Wingesfar + galenici con codice interno (GAL-001…).\n2. Rinominare Consiglio del Dottore in \"Prescrizione / posologia\".",
+"done": false
+},
+{
+"id": "K33",
+"step": 48,
+"title": "Registro consensi automatico (Make → Google Sheet)",
+"pri": "bassa",
+"note": "FASE 7 — Dopo il go-live\nPRIMA SERVE: niente.\n\nPASSAGGI\n1. Da progettare insieme.",
+"done": false
+},
+{
+"id": "K34",
+"step": 49,
+"title": "Promemoria fatture da pagare → Google Calendar",
+"pri": "bassa",
+"note": "FASE 7 — Dopo il go-live\nPRIMA SERVE: niente.\n\nPASSAGGI\n1. Fatture in Cloud → calendario condiviso Francesco + dottore, avviso 7 giorni prima (Make o n8n).",
+"done": false
+},
+{
+"id": "K08",
+"step": 99,
+"title": "(unita al passo 13) Nuovo bot PROMEMORIA ATTESA PAGAMENTO",
+"pri": "bassa",
+"note": "FASE 2 — Fondamenta in Kommo\n\nIl bot esiste già: è Salesbot #4. Vedi passo 13.",
+"done": true
+}
+];
+async function syncKommoPlan(){
+  let started = false;
+  const begin = () => { if(!started){ started = true; setConnBadge('syncing', 'Aggiorno piano Kommo…'); } };
+  if(!rows.some(r => r['Tipo']==='AreaDef' && r['Area']==='kommo')){
+    begin();
+    const a = { id:'KAREA', tipo:'AreaDef', area:'kommo', title:'Kommo / CRM', note:'#2F7A72|#DDEFEC',
+                done:false, priority:'', estHours:null, due:'', progress:0, hours:null, date:'' };
+    rows.push(toRow(a));
+    await persist(a, false);
+  }
+  for(const it of KOMMO_PLAN){
+    const r = rows.find(x => x['ID']===it.id);
+    if(r && (r['Note']||'').includes(KOMMO_PLAN_VER)) continue;
+    begin();
+    let obj, old = '';
+    if(r){
+      obj = fromRow(r);
+      old = noteParts(r['Note']).text.trim();
+    } else {
+      obj = { id:it.id, tipo:'Task', area:'kommo', done:false, estHours:null, due:'', progress:0, hours:null, date:todayStr() };
+    }
+    obj.tipo = 'Task'; obj.area = 'kommo';
+    obj.title = (it.step < 99 ? String(it.step).padStart(2,'0') + ' · ' : '') + it.title;
+    obj.priority = it.pri;
+    let note = it.note;
+    if(old && !old.startsWith('[kommo]') && !old.startsWith('FASE')) note += '\n\n— Note precedenti —\n' + old;
+    obj.note = KOMMO_PLAN_VER + '§' + note;
+    if(it.done) obj.done = true;
+    if(r) Object.assign(r, toRow(obj)); else rows.push(toRow(obj));
     await persist(obj, false);
   }
 }
@@ -839,11 +1296,44 @@ function priLabel(p){
   return '<span class="pri-md">media</span>';
 }
 
+// ---------- Note sulle attività ----------
+// Nel campo Note del foglio i marcatori degli import (ChatGPT:…, Manual:…, ClickUp:…) restano nascosti:
+// servono a non duplicare le attività importate. Se una nota li contiene, al salvataggio
+// diventano "marcatori§testo"; tutto ciò che sta dopo § è la nota visibile e modificabile.
+let openNotes = new Set();
+let pendingRender = false;
+function noteParts(n){
+  n = n || '';
+  const i = n.indexOf('§');
+  if(i >= 0) return {hidden:n.slice(0,i), text:n.slice(i+1)};
+  // Note senza §: i marcatori degli import restano nascosti, il resto è visibile
+  const marks = n.match(/(ChatGPT|Manual|ClickUp):\S+/g) || [];
+  let text = n; marks.forEach(m=>{ text = text.replace(m, ''); });
+  text = text.replace(/^[\s·]+|[\s·]+$/g, '');
+  return {hidden: marks.join(' '), text};
+}
+function toggleNote(id){ if(openNotes.has(id)) openNotes.delete(id); else openNotes.add(id); renderAll(); }
+function saveNote(id, val){
+  const r = rows.find(x=>x['ID']===id);
+  if(r){
+    const p = noteParts(r['Note']);
+    if(p.text !== val){
+      r['Note'] = p.hidden ? p.hidden + '§' + val : val;
+      persist(fromRow(r), false);
+    }
+  }
+  if(pendingRender){ pendingRender = false; setTimeout(renderAll, 0); }
+}
+
 function renderTaskList(container, area, {onlyPending=false, limit=null}={}){
   let list = getTasks().filter(t=>t.area===area);
   if(onlyPending) list = list.filter(t=>!t.done);
+  const stepOf = t => { const m = /^(\d{2})\s·\s/.exec(t.title||''); return m ? parseInt(m[1],10) : null; };
   list.sort((a,b)=>{
     if(a.done!==b.done) return a.done?1:-1;
+    const sa = stepOf(a), sb = stepOf(b);
+    if(sa!=null && sb!=null && sa!==sb) return sa-sb;
+    if((sa!=null)!==(sb!=null)) return sa!=null ? -1 : 1;
     const pr = {alta:0, media:1, bassa:2};
     if(pr[a.priority]!==pr[b.priority]) return pr[a.priority]-pr[b.priority];
     return (a.due||'9999').localeCompare(b.due||'9999');
@@ -861,13 +1351,21 @@ function renderTaskList(container, area, {onlyPending=false, limit=null}={}){
     const overdue = t.due && t.due < todayS && !t.done;
     li.innerHTML = `
       <input type="checkbox" ${t.done?'checked':''} onchange="toggleTask('${t.id}')">
-      <span class="task-title">${escapeHtml(t.title)}</span>
+      <span class="task-title" onclick="toggleNote('${t.id}')" title="Apri note e passaggi">${escapeHtml(t.title)}${noteParts(t.note).text ? '<span class="note-dot">● note</span>' : ''}</span>
       <input type="number" class="est-input" step="0.25" min="0" value="${t.estHours!=null?t.estHours:''}" placeholder="h" title="Ore previste" onchange="updateEstHours('${t.id}', this.value)">
       <span class="task-meta ${overdue?'overdue':''}">${priLabel(t.priority)}${t.due? ' · '+formatDate(t.due):''}</span>
       <button class="del-btn" onclick="deleteTask('${t.id}')" title="Elimina">×</button>
     `;
+    if(openNotes.has(t.id)){
+      const box = document.createElement('div');
+      box.className = 'task-note';
+      box.innerHTML = `<label>Note e passaggi</label><textarea class="note-input" placeholder="Scrivi qui passaggi, appunti o problemi…" onblur="saveNote('${t.id}', this.value)" oninput="this.style.height='auto';this.style.height=(this.scrollHeight+4)+'px'">${escapeHtml(noteParts(t.note).text)}</textarea>`;
+      li.appendChild(box);
+    }
     container.appendChild(li);
   });
+  // le note lunghe (passaggi) si aprono già alla loro altezza
+  container.querySelectorAll('.note-input').forEach(t=>{ t.style.height='auto'; t.style.height=(t.scrollHeight+4)+'px'; });
 }
 
 function formatDate(iso){
@@ -1159,6 +1657,8 @@ function attachEnterKey(id, fn){
 }
 
 function renderAll(){
+  const ae = document.activeElement;
+  if(ae && ae.classList && ae.classList.contains('note-input')){ pendingRender = true; return; }
   document.querySelector('.subtitle').textContent = computeAreas().map(a=>a.name).join(' · ');
   buildHoursAreaOptions();
   renderAttivitaAreas();
